@@ -118,6 +118,9 @@ NAN_METHOD(get){
 		reinterpret_cast<void*>(static_cast<intptr_t>(resId))
 	).ToLocalChecked());
 }
+NAN_METHOD(jsExitCheck){
+	exitCheck(NULL);
+}
 
 static void Init(Handle<Object> target){
 	exitCheckMax=16;
@@ -125,6 +128,7 @@ static void Init(Handle<Object> target){
 	exitCheckAddr=new void*[exitCheckMax];
 	
 	Nan::SetMethod(target,"get",get);
+	Nan::SetMethod(target,"jsExitCheck",jsExitCheck);
 
 	target->Set(Nan::New("IPC_PRIVATE").ToLocalChecked(),Nan::New<Number>(IPC_PRIVATE));
 
@@ -133,7 +137,7 @@ static void Init(Handle<Object> target){
 
 	target->Set(Nan::New("SHM_RDONLY").ToLocalChecked(),Nan::New<Number>(SHM_RDONLY));
 	
-	AtExit(exitCheck);
+	AtExit(exitCheck);//不知為啥可能不會在退出時執行
 }
 
 }

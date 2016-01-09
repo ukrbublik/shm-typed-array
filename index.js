@@ -7,6 +7,7 @@ const perm=Number.parseInt('660',8);
 
 module.exports.create=create;
 module.exports.get=get;
+process.on('exit',shm.jsExitCheck);//因為 node::AtExit 可能不會執行，先頂著
 
 function create(size){
 	if(!(Number.isSafeInteger(size) && size>0 && size<=uintMax))
