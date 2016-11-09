@@ -6,7 +6,8 @@
 			"<!(node -e \"require('nan')\")",
 		],
 		"sources": [
-			"src/shm.cc",
+			"src/node_shm.h",
+			"src/node_shm.cc"
 		]
 	}]
 }

@@ -8,7 +8,8 @@
 	"author": "a0000778 <a0000778@gmail.com> (http://code.a0000778.idv.biz/)",
 	"license": "MIT",
 	"dependencies": {
-		"nan": "^2.1.0"
+		"nan": "^2.1.0",
+    		"node-cleanup": "^1.0.1"
 	},
 	"os": ["!win32"],
 	"engines": {
