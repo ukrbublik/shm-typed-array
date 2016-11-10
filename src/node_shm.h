@@ -29,6 +29,20 @@ namespace Buffer {
 #define SAFE_DELETE_ARR(a) if( (a) != NULL ) delete [] (a); (a) = NULL;
 
 
+enum TypedArrayType {
+	TA_NONE = 0, //for using Buffer instead of TypedArray
+	TA_INT8,
+	TA_UINT8,
+	TA_UINT8CLAMPED,
+	TA_INT16,
+	TA_UINT16,
+	TA_INT32,
+	TA_UINT32,
+	TA_FLOAT32,
+	TA_FLOAT64
+};
+
+
 namespace node {
 namespace Buffer {
 
@@ -67,15 +81,19 @@ namespace node_shm {
 	//  size_t size
 	//  int shmflg - flags for shmget()
 	//  int at_shmflg - flags for shmat()
-	//  todo typed, [][] ????
+	//  enum TypedArrayType type
+	// Returns buffer or typed array, depends on input param type
 	NAN_METHOD(get);
 
 	// Destroy shared memory segment
 	// Params:
 	//  key_t key
+	//  bool force - true to destroy even there are other processed uses this segment
+	// Returns count of left attaches or -1 on error
 	NAN_METHOD(destroy);
 
-	// Destroy all created shared memory segments
+	// Detach all created shared memory segments
+	// Returns count of detached blocks
 	NAN_METHOD(destroyAll);
 
 	// Constants to be exported:
@@ -84,6 +102,9 @@ namespace node_shm {
 	// IPC_EXCL
 	// SHM_RDONLY
 	// NODE_BUFFER_MAX_LENGTH
+	// enum TypedArrayType: 
+	//  TA_NONE, TA_INT8, TA_UINT8, TA_UINT8CLAMPED, TA_INT16, TA_UINT16, TA_INT32, TA_UINT32, 
+	//  TA_FLOAT32, TA_FLOAT64
 
 }
 }
