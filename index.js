@@ -8,7 +8,7 @@ const keyMax = uint32Max - keyMin;
 const perm = Number.parseInt('660', 8);
 const sizeMin = 1;
 // NODE_BUFFER_MAX_LENGTH = 2GB (0x7fffffff) for 64bit, 1GB for 32bit
-const sizeMax = NODE_BUFFER_MAX_LENGTH;
+const sizeMax = shm.NODE_BUFFER_MAX_LENGTH;
 
 module.exports.create = create;
 module.exports.get = get;
@@ -40,6 +40,10 @@ function get(key) {
 	let res = shm.get(key, 0, 0);
 	res.key = key;
 	return res;
+}
+
+function destroy(key) {
+	shm.destroy(key);
 }
 
 function keyGen() {
