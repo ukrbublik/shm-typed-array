@@ -30,7 +30,7 @@ Will be automatically called on process exit/termination.
 
 <h4>shm.BufferType</h4>
 Types of shared memory object.<br>
-One of values whould be passed to create() and get()
+One of values should be passed to create() and get()
 <pre>
 {
 	'Buffer': shm.SHMBT_BUFFER,
