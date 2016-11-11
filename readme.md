@@ -1,5 +1,3 @@
-shm-typed-array
------------
 
 IPC shared memory for NodeJs. Use as Buffer or TypedArray.
 
