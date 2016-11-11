@@ -1,13 +1,13 @@
 IPC shared memory for NodeJs.<br>
 
 # Install
-todo: npm<br>
+todo: npm<br><br>
 Manual build:<pre>
 node-gyp configure
 node-gyp build
 node example.js
 </pre>
-Tested on Ubuntu 16
+Tested on Ubuntu 16, Node v6.9.1
 
 # API
 
@@ -30,7 +30,7 @@ Will be automatically called on process exit/termination.
 
 <h4>shm.BufferType</h4>
 Types of shared memory object.<br>
-One of values whould be passed to create() and get()
+One of values should be passed to create() and get()
 <pre>
 {
 	'Buffer': shm.SHMBT_BUFFER,
@@ -46,7 +46,7 @@ One of values whould be passed to create() and get()
 };
 </pre>
 
-<h4>shm.sizeMax</h4>
+<h4>shm.SizeMax</h4>
 Max size of shared memory segment in bytes<br>
 2GB (0x7fffffff) for 64bit, 1GB for 32bit
 
@@ -56,12 +56,11 @@ See example.js
 <pre>
 const cluster = require('cluster');
 const shm = require('./index.js');
-const nodeCleanup = require('node-cleanup');
 
 var buf, arr;
 if (cluster.isMaster) {
-	buf = shm.create(4096);
-	arr = shm.create(1000000*100*4, shm.BufferType.Float32Array);
+	buf = shm.create(4096); //4KB
+	arr = shm.create(1000000*100*4, shm.BufferType.Float32Array); //100M floats
 	buf[0] = 1;
 	arr[0] = 10.0;
 	console.log('[Master] Typeof buf:', buf.constructor.name, 
