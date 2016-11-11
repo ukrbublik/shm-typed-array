@@ -4,12 +4,12 @@
 	"description": "IPC shared memory for NodeJs. Use as Buffer or TypedArray.",
 	"main": "index.js",
 	"repository": {},
-	"keywords": ["ipc", "shm", "shared memory"],
+	"keywords": ["ipc", "shm", "shared memory", "typed array", "TypedArray", "Buffer", "Int8Array", "Uint8Array", "Uint8ClampedArray", "Int16Array", "Uint16Array", "Int32Array", "Uint32Array", "Float32Array", "Float64Array"],
 	"author": "ukrbublik <ukrbublik@gmail.com>",
 	"license": "MIT",
 	"dependencies": {
 		"nan": "^2.1.0",
-    	"node-cleanup": "^1.0.1"
+		"node-cleanup": "^1.0.1"
 	},
 	"os": ["!win32"],
 	"engines": {
