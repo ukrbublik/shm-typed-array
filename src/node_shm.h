@@ -105,7 +105,7 @@ namespace node_shm {
 	NAN_METHOD(detach);
 
 	/**
-	 * Detach all created shared memory segments
+	 * Detach all created and getted shared memory segments
 	 * Returns count of destroyed segments
 	 */
 	NAN_METHOD(detachAll);

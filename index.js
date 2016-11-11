@@ -42,10 +42,10 @@ const BufferType = {
 
 /**
  * Create shared memory segment
- * @param int size - size in bytes
- * @param int type - see BufferType
- * @return shared memory buffer/array object
- *  Type depends on param type: Buffer (if type == SHMBT_BUFFER) or descendant of TypedArray
+ * @param {int} size - size in bytes
+ * @param {int} type - SHMBT_*, see BufferType
+ * @return {mixed} shared memory buffer/array object
+ *  Class depends on param type: Buffer (if type == SHMBT_BUFFER) or descendant of TypedArray
  *  Has property 'key' - integer key of created shared memory segment
  */
 function create(size, type) {
@@ -64,9 +64,9 @@ function create(size, type) {
 
 /**
  * Get shared memory segment
- * @param int key - integer key of shared memory segment
- * @param int type - see BufferType
- * @return shared memory buffer/array object, see create()
+ * @param {int} key - integer key of shared memory segment
+ * @param {int} type - see BufferType
+ * @return {mixed} shared memory buffer/array object, see create()
  */
 function get(key, type) {
 	if (!(Number.isSafeInteger(key) && key >= keyMin && key <= keyMax))
@@ -78,9 +78,10 @@ function get(key, type) {
 
 /**
  * Detach shared memory segment
- * @param int key - integer key of shared memory segment
- * @param bool forceDestroy - true to destroy even there are other attaches
- * @return int count of left attaches or -1 on error
+ * If there are no other attaches for this segment, it will be destroyed
+ * @param {int} key - integer key of shared memory segment
+ * @param {bool} forceDestroy - true to destroy even there are other attaches
+ * @return {int} count of left attaches or -1 on error
  */
 function detach(key, forceDestroy) {
 	if (forceDestroy === undefined)
@@ -89,9 +90,9 @@ function detach(key, forceDestroy) {
 }
 
 /**
- * Detach all created  shared memory segments
+ * Detach all created and getted shared memory segments
  * Will be automatically called on process exit/termination
- * @return int count of destroyed segments
+ * @return {int} count of destroyed segments
  */
 function detachAll() {
 	return shm.detachAll();

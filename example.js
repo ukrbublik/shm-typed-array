@@ -8,7 +8,8 @@ if (cluster.isMaster) {
 	arr = shm.create(1000000*100*4, shm.BufferType.Float32Array);
 	buf[0] = 1;
 	arr[0] = 10.0;
-	console.log('[Master] Typeof buf:', buf.constructor.name, 'Typeof arr:', arr.constructor.name);
+	console.log('[Master] Typeof buf:', buf.constructor.name, 
+			'Typeof arr:', arr.constructor.name);
 	
 	var worker = cluster.fork();
 	worker.on('online', function() {
@@ -17,7 +18,8 @@ if (cluster.isMaster) {
 		setInterval(function() {
 			buf[0] += 1;
 			arr[0] /= 2;
-			console.log(i + ' [Master] Set buf[0]=', buf[0], ' arr[0]=', arr ? arr[0] : null);
+			console.log(i + ' [Master] Set buf[0]=', buf[0], 
+				' arr[0]=', arr ? arr[0] : null);
 			i++;
 			if (i == 5) {
 				groupSuicide();
@@ -30,10 +32,12 @@ if (cluster.isMaster) {
 		if (msg == 'shm') {
 			buf = shm.get(data.bufKey);
 			arr = shm.get(data.arrKey, shm.BufferType.Float32Array);
-			console.log('[Worker] Typeof buf:', buf.constructor.name, 'Typeof arr:', arr.constructor.name);
+			console.log('[Worker] Typeof buf:', buf.constructor.name, 
+					'Typeof arr:', arr.constructor.name);
 			var i = 0;
 			setInterval(function() {
-				console.log(i + ' [Worker] Get buf[0]=', buf[0], ' arr[0]=', arr ? arr[0] : null);
+				console.log(i + ' [Worker] Get buf[0]=', buf[0], 
+					' arr[0]=', arr ? arr[0] : null);
 				i++;
 				if (i == 2) {
 					shm.detach(data.arrKey);

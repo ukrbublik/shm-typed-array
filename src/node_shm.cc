@@ -1,6 +1,4 @@
 #include "node_shm.h"
-#include <iostream>
-using namespace std;
 
 //-------------------------------
 
