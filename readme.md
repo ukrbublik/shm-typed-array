@@ -1,12 +1,19 @@
-IPC shared memory for NodeJs.<br>
+shm-typed-array
+-----------
+
+IPC shared memory for NodeJs. Use as Buffer or TypedArray.
 
 # Install
-todo: npm<br><br>
-Manual build:<pre>
+``` bash
+$ npm install shm-typed-array
+$ npm test
+```
+Manual build:
+``` bash
 node-gyp configure
 node-gyp build
 node example.js
-</pre>
+```
 Tested on Ubuntu 16, Node v6.9.1
 
 # API
@@ -53,7 +60,7 @@ Max size of shared memory segment in bytes<br>
 # Usage
 See example.js
 
-<pre>
+``` js
 const cluster = require('cluster');
 const shm = require('./index.js');
 
@@ -114,11 +121,9 @@ function groupSuicide() {
 		process.exit();
 	}
 }
-
-/**
- * Ouput
- *
-
+```
+<b>Output:</b>
+<pre>
 [Master] Typeof buf: Buffer Typeof arr: Float32Array
 [Worker] Typeof buf: Buffer Typeof arr: Float32Array
 0 [Master] Set buf[0]= 2  arr[0]= 5
@@ -131,7 +136,4 @@ function groupSuicide() {
 3 [Worker] Get buf[0]= 5  arr[0]= null
 4 [Master] Set buf[0]= 6  arr[0]= 0.3125
 shm segments destroyed: 2
-
-
-*/
 </pre>
