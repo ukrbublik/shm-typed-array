@@ -1,15 +1,15 @@
 {
-	"name": "node_shm",
-	"version": "0.0.1",
-	"description": "IPC 共享記憶體功能 | IPC shared memory",
+	"name": "shm-typed-array",
+	"version": "0.0.2",
+	"description": "IPC shared memory for NodeJs. Use as Buffer or TypedArray.",
 	"main": "index.js",
 	"repository": {},
-	"keywords": ["ipc","shm"],
-	"author": "a0000778 <a0000778@gmail.com> (http://code.a0000778.idv.biz/)",
+	"keywords": ["ipc", "shm", "shared memory"],
+	"author": "ukrbublik <ukrbublik@gmail.com>",
 	"license": "MIT",
 	"dependencies": {
 		"nan": "^2.1.0",
-    		"node-cleanup": "^1.0.1"
+    	"node-cleanup": "^1.0.1"
 	},
 	"os": ["!win32"],
 	"engines": {
