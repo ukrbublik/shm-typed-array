@@ -1,4 +1,6 @@
 #include "node_shm.h"
+#include <iostream>
+using namespace std;
 
 //-------------------------------
 
@@ -26,18 +28,31 @@ namespace Buffer {
 	using v8::Float32Array;
 	using v8::Float64Array;
 
+
 	MaybeLocal<Object> NewTyped(
 		Isolate* isolate, 
 		char* data, 
-		size_t length,
-		TypedArrayType type = TA_FLOAT64
+		size_t length
+	#if NODE_MODULE_VERSION > IOJS_2_0_MODULE_VERSION
+	    , node::Buffer::FreeCallback callback
+	#else
+	    , node::smalloc::FreeCallback callback
+	#endif
+	    , void *hint
+		, ShmBufferType type
 	) {
 		EscapableHandleScope scope(isolate);
 
-		if (length > node::Buffer::kMaxLength)
-			return Local<Object>();
+		/**
+		 * Bad way, causes segmentation fault!
+		 * Because we can't use this:
+		 *  CallbackInfo::New(isolate, ab, callback, data, hint);
+		 * as in declaration of 
+		 *  node::Buffer::New(Isolate*, char*, size_t, FreeCallback, void*)
+		 *  (node_buffer.cc)
+		 * because it's private
+		 **
 
-		Local<Object> obj;
 		Local<ArrayBuffer> ab = ArrayBuffer::New(
 			isolate,
 			data,
@@ -45,43 +60,47 @@ namespace Buffer {
 			ArrayBufferCreationMode::kInternalized);
 		if (data == nullptr)
 			ab->Neuter();
+		*/
 
+		MaybeLocal<Object> mlarr = node::Buffer::New(
+			isolate, data, length, callback, hint);
+		Local<Object> larr = mlarr.ToLocalChecked();
+		Uint8Array* arr = (Uint8Array*) *larr;
+		Local<ArrayBuffer> ab = arr->Buffer();
+		
 		Local<Object> ui;
 		switch(type) {
-		case TA_INT8:
-			ui = Int8Array::New(ab, 0, length);
-		break;
-		case TA_UINT8:
-			ui = Uint8Array::New(ab, 0, length);
-		break;
-		case TA_UINT8CLAMPED:
-			ui = Uint8ClampedArray::New(ab, 0, length);
-		break;
-		case TA_INT16:
-			ui = Int16Array::New(ab, 0, length);
-		break;
-		case TA_UINT16:
-			ui = Uint16Array::New(ab, 0, length);
-		break;
-		case TA_INT32:
-			ui = Int32Array::New(ab, 0, length);
-		break;
-		case TA_UINT32:
-			ui = Uint32Array::New(ab, 0, length);
-		break;
-		case TA_FLOAT32:
-			ui = Float32Array::New(ab, 0, length);
-		break;
-		default:
-		case TA_FLOAT64:
-			ui = Float64Array::New(ab, 0, length);
-		break;
+			case SHMBT_INT8:
+				ui = Int8Array::New(ab, 0, length);
+			break;
+			case SHMBT_UINT8:
+				ui = Uint8Array::New(ab, 0, length);
+			break;
+			case SHMBT_UINT8CLAMPED:
+				ui = Uint8ClampedArray::New(ab, 0, length);
+			break;
+			case SHMBT_INT16:
+				ui = Int16Array::New(ab, 0, length);
+			break;
+			case SHMBT_UINT16:
+				ui = Uint16Array::New(ab, 0, length);
+			break;
+			case SHMBT_INT32:
+				ui = Int32Array::New(ab, 0, length);
+			break;
+			case SHMBT_UINT32:
+				ui = Uint32Array::New(ab, 0, length);
+			break;
+			case SHMBT_FLOAT32:
+				ui = Float32Array::New(ab, 0, length);
+			break;
+			default:
+			case SHMBT_FLOAT64:
+				ui = Float64Array::New(ab, 0, length);
+			break;
 		}
 
-		if (true)
-			return scope.Escape(ui);
-
-		return Local<Object>();
+		return scope.Escape(ui);
 	}
 
 }
@@ -94,26 +113,26 @@ namespace Nan {
 	inline MaybeLocal<Object> NewTypedBuffer(
 	      char *data
 	    , size_t length
-	    , TypedArrayType type = TA_NONE
 	#if NODE_MODULE_VERSION > IOJS_2_0_MODULE_VERSION
-	    , node::Buffer::FreeCallback callback = NULL
+	    , node::Buffer::FreeCallback callback
 	#else
-	    , node::smalloc::FreeCallback callback = NULL
+	    , node::smalloc::FreeCallback callback
 	#endif
-	    , void *hint = NULL
-	  ) {
+	    , void *hint
+	    , ShmBufferType type
+	) {
 	    // arbitrary buffer lengths requires
 	    // NODE_MODULE_VERSION >= IOJS_3_0_MODULE_VERSION
 	    //assert(length <= imp::kMaxLength && "too large buffer");
 	    assert(length <= node::Buffer::kMaxLength && "too large buffer");
 
-		if (type != TA_NONE) {
+		if (type != SHMBT_BUFFER) {
 			#if NODE_MODULE_VERSION > IOJS_2_0_MODULE_VERSION
 			    return node::Buffer::NewTyped(
-			        Isolate::GetCurrent(), data, length, type);
+			        Isolate::GetCurrent(), data, length, callback, hint, type);
 			#else
 			    return MaybeLocal<v8::Object>(node::Buffer::NewTyped(
-			        Isolate::GetCurrent(), data, length, type));
+			        Isolate::GetCurrent(), data, length, callback, hint, type));
 			#endif
 	    } else {
 			#if NODE_MODULE_VERSION > IOJS_2_0_MODULE_VERSION
@@ -125,7 +144,7 @@ namespace Nan {
 			#endif
 	    }
 
-	  }
+	}
 
 }
 
@@ -148,9 +167,9 @@ namespace node_shm {
 	void** shmSegmentsAddrs = NULL;
 
 	// Declare private methods
-	static int destroyShmSegments();
+	static int detachShmSegments();
 	static void initShmSegmentsInfo();
-	static int destroyShmSegment(int resId, void* addr, bool force = false);
+	static int detachShmSegment(int resId, void* addr, bool force = false, bool onExit = false);
 	static void addShmSegmentInfo(int resId, void* addr);
 	static bool removeShmSegmentInfo(int resId);
 	static void FreeCallback(char* data, void* hint);
@@ -160,7 +179,7 @@ namespace node_shm {
 
 	// Init info arrays
 	static void initShmSegmentsInfo() {
-		destroyShmSegments();
+		detachShmSegments();
 
 		shmSegmentsCnt = 0;
 		shmSegmentsCntMax = 16; //will be multiplied by 2 when arrays are full
@@ -168,9 +187,9 @@ namespace node_shm {
 		shmSegmentsAddrs = new void*[shmSegmentsCntMax];
 	}
 
-	// Destroy all segments and delete info arrays
-	// Returns count of detached blocks
-	static int destroyShmSegments() {
+	// Detach all segments and delete info arrays
+	// Returns count of destroyed segments
+	static int detachShmSegments() {
 		int res = 0;
 		if (shmSegmentsCnt > 0) {
 			void* addr;
@@ -178,7 +197,7 @@ namespace node_shm {
 			for (int i = 0 ; i < shmSegmentsCnt ; i++) {
 				addr = shmSegmentsAddrs[i];
 				resId = shmSegmentsIds[i];
-				if (destroyShmSegment(resId, addr) != -1)
+				if (detachShmSegment(resId, addr, false, true) == 0)
 					res++;
 			}
 		}
@@ -233,9 +252,9 @@ namespace node_shm {
 		return true;
 	}
 
-	// Destroy segment
+	// Detach segment
 	// Returns count of left attaches or -1 on error
-	static int destroyShmSegment(int resId, void* addr, bool force /*= false*/) {
+	static int detachShmSegment(int resId, void* addr, bool force, bool onExit) {
 		int err;
 		struct shmid_ds shmid_ds;
 		//detach
@@ -249,17 +268,24 @@ namespace node_shm {
 					err = shmctl(resId, IPC_RMID, 0);
 					if (err == 0) {
 						return 0; //detached and destroyed
-					} else
-						{} //Nan::ThrowError(strerror(errno));
-				} else
+					} else {
+						if(!onExit)
+							Nan::ThrowError(strerror(errno));
+					}
+				} else {
 					return shmid_ds.shm_nattch; //detached, but not destroyed
-			} else
-				{} //Nan::ThrowError(strerror(errno));
+				}
+			} else {
+				if(!onExit)
+					Nan::ThrowError(strerror(errno));
+			}
 		} else {
 			switch(errno) {
 				case EINVAL: // wrong addr
 				default:
-					{} //Nan::ThrowError(strerror(errno));
+					if(!onExit)
+						Nan::ThrowError(strerror(errno));
+				break;
 			}
 		}
 		return -1;
@@ -267,24 +293,16 @@ namespace node_shm {
 
 	// Used only when creating byte-array (Buffer), not typed array
 	// Because impl of CallbackInfo::New() is not public (see https://github.com/nodejs/node/blob/v6.x/src/node_buffer.cc)
-	// Developer can destroy shared memory blocks manually by shm.destroy()
-	// Also shm.destroyAll() will be called on process termination
+	// Developer can detach shared memory segments manually by shm.detach()
+	// Also shm.detachAll() will be called on process termination
 	static void FreeCallback(char* data, void* hint) {
 		int resId = reinterpret_cast<intptr_t>(hint);
 		void* addr = (void*) data;
 
-		destroyShmSegment(resId, addr);
+		detachShmSegment(resId, addr, false, true);
 		removeShmSegmentInfo(resId);
 	}
 
-	// Create or get shared memory
-	// Params:
-	//  key_t key
-	//  size_t size
-	//  int shmflg - flags for shmget()
-	//  int at_shmflg - flags for shmat()
-	//  enum TypedArrayType type
-	// Returns buffer or typed array, depends on input param type
 	NAN_METHOD(get) {
 		Nan::HandleScope scope;
 		int err;
@@ -294,7 +312,7 @@ namespace node_shm {
 		size_t size = info[1]->Uint32Value();
 		int shmflg = info[2]->Uint32Value();
 		int at_shmflg = info[3]->Uint32Value();
-		TypedArrayType type = (TypedArrayType) info[4]->Int32Value();
+		ShmBufferType type = (ShmBufferType) info[4]->Int32Value();
 		
 		int resId = shmget(key, size, shmflg);
 		if (resId == -1) {
@@ -327,22 +345,17 @@ namespace node_shm {
 			info.GetReturnValue().Set(Nan::NewTypedBuffer(
 				reinterpret_cast<char*>(res),
 				size,
-				type,
 				FreeCallback,
-				reinterpret_cast<void*>(static_cast<intptr_t>(resId))
+				reinterpret_cast<void*>(static_cast<intptr_t>(resId)),
+				type
 			).ToLocalChecked());
 		}
 	}
 
-	// Destroy shared memory segment
-	// Params:
-	//  key_t key
-	//  bool force
-	// Returns count of left attaches or -1 on error
-	NAN_METHOD(destroy) {
+	NAN_METHOD(detach) {
 		Nan::HandleScope scope;
 		key_t key = info[0]->Uint32Value();
-		bool force = info[1]->BooleanValue();
+		bool forceDestroy = info[1]->BooleanValue();
 
 		int resId = shmget(key, 0, 0);
 		if (resId == -1) {
@@ -365,24 +378,22 @@ namespace node_shm {
 			int i = found - shmSegmentsIds;
 			void* addr = shmSegmentsAddrs[i];
 
-			int res = destroyShmSegment(resId, addr, force);
+			int res = detachShmSegment(resId, addr, forceDestroy);
 			if (res != -1)
 				removeShmSegmentInfo(resId);
 			info.GetReturnValue().Set(Nan::New<Number>(res));
 		}
 	}
 
-	// Destroy all created shared memory segments
-	// Returns count of detached blocks
-	NAN_METHOD(destroyAll) {
-		int cnt = destroyShmSegments();
+	NAN_METHOD(detachAll) {
+		int cnt = detachShmSegments();
 		initShmSegmentsInfo();
 		info.GetReturnValue().Set(Nan::New<Number>(cnt));
 	}
 
 	// node::AtExit
 	static void AtNodeExit(void*) {
-		destroyShmSegments();
+		detachShmSegments();
 	}
 
 	// Init module
@@ -390,25 +401,25 @@ namespace node_shm {
 		initShmSegmentsInfo();
 		
 		Nan::SetMethod(target, "get", get);
-		Nan::SetMethod(target, "destroy", destroy);
-		Nan::SetMethod(target, "destroyAll", destroyAll);
+		Nan::SetMethod(target, "detach", detach);
+		Nan::SetMethod(target, "detachAll", detachAll);
 
 		target->Set(Nan::New("IPC_PRIVATE").ToLocalChecked(), Nan::New<Number>(IPC_PRIVATE));
 		target->Set(Nan::New("IPC_CREAT").ToLocalChecked(), Nan::New<Number>(IPC_CREAT));
 		target->Set(Nan::New("IPC_EXCL").ToLocalChecked(), Nan::New<Number>(IPC_EXCL));
 		target->Set(Nan::New("SHM_RDONLY").ToLocalChecked(), Nan::New<Number>(SHM_RDONLY));
 		target->Set(Nan::New("NODE_BUFFER_MAX_LENGTH").ToLocalChecked(), Nan::New<Number>(node::Buffer::kMaxLength));
-		//enum TypedArrayType
-		target->Set(Nan::New("TA_NONE").ToLocalChecked(), Nan::New<Number>(TA_NONE));
-		target->Set(Nan::New("TA_INT8").ToLocalChecked(), Nan::New<Number>(TA_INT8));
-		target->Set(Nan::New("TA_UINT8").ToLocalChecked(), Nan::New<Number>(TA_UINT8));
-		target->Set(Nan::New("TA_UINT8CLAMPED").ToLocalChecked(), Nan::New<Number>(TA_UINT8CLAMPED));
-		target->Set(Nan::New("TA_INT16").ToLocalChecked(), Nan::New<Number>(TA_INT16));
-		target->Set(Nan::New("TA_UINT16").ToLocalChecked(), Nan::New<Number>(TA_UINT16));
-		target->Set(Nan::New("TA_INT32").ToLocalChecked(), Nan::New<Number>(TA_INT32));
-		target->Set(Nan::New("TA_UINT32").ToLocalChecked(), Nan::New<Number>(TA_UINT32));
-		target->Set(Nan::New("TA_FLOAT32").ToLocalChecked(), Nan::New<Number>(TA_FLOAT32));
-		target->Set(Nan::New("TA_FLOAT64").ToLocalChecked(), Nan::New<Number>(TA_FLOAT64));
+		//enum ShmBufferType
+		target->Set(Nan::New("SHMBT_BUFFER").ToLocalChecked(), Nan::New<Number>(SHMBT_BUFFER));
+		target->Set(Nan::New("SHMBT_INT8").ToLocalChecked(), Nan::New<Number>(SHMBT_INT8));
+		target->Set(Nan::New("SHMBT_UINT8").ToLocalChecked(), Nan::New<Number>(SHMBT_UINT8));
+		target->Set(Nan::New("SHMBT_UINT8CLAMPED").ToLocalChecked(), Nan::New<Number>(SHMBT_UINT8CLAMPED));
+		target->Set(Nan::New("SHMBT_INT16").ToLocalChecked(), Nan::New<Number>(SHMBT_INT16));
+		target->Set(Nan::New("SHMBT_UINT16").ToLocalChecked(), Nan::New<Number>(SHMBT_UINT16));
+		target->Set(Nan::New("SHMBT_INT32").ToLocalChecked(), Nan::New<Number>(SHMBT_INT32));
+		target->Set(Nan::New("SHMBT_UINT32").ToLocalChecked(), Nan::New<Number>(SHMBT_UINT32));
+		target->Set(Nan::New("SHMBT_FLOAT32").ToLocalChecked(), Nan::New<Number>(SHMBT_FLOAT32));
+		target->Set(Nan::New("SHMBT_FLOAT64").ToLocalChecked(), Nan::New<Number>(SHMBT_FLOAT64));
 
 		node::AtExit(AtNodeExit);
 	}

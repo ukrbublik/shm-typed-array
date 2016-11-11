@@ -8,47 +8,49 @@ const keyMin = 1;
 const keyMax = uint32Max - keyMin;
 const perm = Number.parseInt('660', 8);
 const sizeMin = 1;
+/**
+ * Max size of shared memory segment in bytes
+ * 2GB (0x7fffffff) for 64bit, 1GB for 32bit
+ */
 const sizeMax = shm.NODE_BUFFER_MAX_LENGTH;
 
 const cleanup = function () {
 	try {
-		var cnt = shm.destroyAll();
+		var cnt = shm.detachAll();
 		if (cnt > 0)
-			console.info('shm blocks detached:', cnt);
+			console.info('shm segments destroyed:', cnt);
 	} catch(exc) { console.error(exc); }
 };
-if (cluster.isMaster || true) {
-	process.on('exit', cleanup);
-	nodeCleanup(cleanup);
-}
+process.on('exit', cleanup);
+nodeCleanup(cleanup);
 
 /**
- * Types 
+ * Types of shared memory object
  */
-const TypedArrayType = {
-	'Buffer': shm.TA_NONE,
-	'Int8Array': shm.TA_INT8,
-	'Uint8Array': shm.TA_UINT8,
-	'Uint8ClampedArray': shm.TA_UINT8CLAMPED,
-	'Int16Array': shm.TA_INT16,
-	'Uint16Array': shm.TA_UINT16,
-	'Int32Array': shm.TA_INT32,
-	'Uint32Array': shm.TA_UINT32,
-	'Float32Array': shm.TA_FLOAT32, 
-	'Float64Array': shm.TA_FLOAT64,
+const BufferType = {
+	'Buffer': shm.SHMBT_BUFFER,
+	'Int8Array': shm.SHMBT_INT8,
+	'Uint8Array': shm.SHMBT_UINT8,
+	'Uint8ClampedArray': shm.SHMBT_UINT8CLAMPED,
+	'Int16Array': shm.SHMBT_INT16,
+	'Uint16Array': shm.SHMBT_UINT16,
+	'Int32Array': shm.SHMBT_INT32,
+	'Uint32Array': shm.SHMBT_UINT32,
+	'Float32Array': shm.SHMBT_FLOAT32, 
+	'Float64Array': shm.SHMBT_FLOAT64,
 };
 
 /**
- * Create shared memory
+ * Create shared memory segment
  * @param int size - size in bytes
- * @param int type - see TypedArrayType
+ * @param int type - see BufferType
  * @return shared memory buffer/array object
- *  Type depends on type: Buffer (if type == TA_NONE) or TypedArray
- *  Has property 'key' - integer key of created shared memory block
+ *  Type depends on param type: Buffer (if type == SHMBT_BUFFER) or descendant of TypedArray
+ *  Has property 'key' - integer key of created shared memory segment
  */
 function create(size, type) {
 	if (type === undefined)
-		type = TypedArrayType.Buffer;
+		type = BufferType.Buffer;
 	if (!(Number.isSafeInteger(size) && size >= sizeMin && size <= sizeMax))
 		throw new RangeError('shm size should be ' + sizeMin + ' .. ' + sizeMax);
 	let key, res;
@@ -61,9 +63,9 @@ function create(size, type) {
 }
 
 /**
- * Get shared memory
- * @param int key - integer key of shared memory block
- * @param int type - see TypedArrayType
+ * Get shared memory segment
+ * @param int key - integer key of shared memory segment
+ * @param int type - see BufferType
  * @return shared memory buffer/array object, see create()
  */
 function get(key, type) {
@@ -75,24 +77,24 @@ function get(key, type) {
 }
 
 /**
- * Destroy shared memory
- * @param int key - integer key of shared memory block
- * @param bool force - true to destroy even there are other processed uses this segment
+ * Detach shared memory segment
+ * @param int key - integer key of shared memory segment
+ * @param bool forceDestroy - true to destroy even there are other attaches
  * @return int count of left attaches or -1 on error
  */
-function destroy(key, force) {
-	if (force === undefined)
-		force = false;
-	return shm.destroy(key, force);
+function detach(key, forceDestroy) {
+	if (forceDestroy === undefined)
+		forceDestroy = false;
+	return shm.detach(key, forceDestroy);
 }
 
 /**
- * Destroy all created  shared memory blocks
+ * Detach all created  shared memory segments
  * Will be automatically called on process exit/termination
- * @return int count of detached blocks
+ * @return int count of destroyed segments
  */
-function destroyAll() {
-	return shm.destroyAll();
+function detachAll() {
+	return shm.detachAll();
 }
 
 function _keyGen() {
@@ -102,7 +104,7 @@ function _keyGen() {
 //Exports
 module.exports.create = create;
 module.exports.get = get;
-module.exports.destroy = destroy;
-module.exports.destroyAll = destroyAll;
-module.exports.TypedArrayType = TypedArrayType;
-module.exports.sizeMax = sizeMax; //2GB (0x7fffffff) for 64bit, 1GB for 32bit
+module.exports.detach = detach;
+module.exports.detachAll = detachAll;
+module.exports.BufferType = BufferType;
+module.exports.SizeMax = sizeMax;
