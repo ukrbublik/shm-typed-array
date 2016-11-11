@@ -1,11 +1,10 @@
 const cluster = require('cluster');
 const shm = require('./index.js');
-const nodeCleanup = require('node-cleanup');
 
 var buf, arr;
 if (cluster.isMaster) {
-	buf = shm.create(4096);
-	arr = shm.create(1000000*100*4, shm.BufferType.Float32Array);
+	buf = shm.create(4096); //4KB
+	arr = shm.create(1000000*100*4, shm.BufferType.Float32Array); //100M floats
 	buf[0] = 1;
 	arr[0] = 10.0;
 	console.log('[Master] Typeof buf:', buf.constructor.name, 
