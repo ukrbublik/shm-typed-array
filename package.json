@@ -14,5 +14,22 @@
 	"os": ["!win32"],
 	"engines": {
 		"node": ">=4.0.0"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/ukrbublik/shm-typed-array.git"
+	},
+	"bugs": {
+		"url": "https://github.com/ukrbublik/shm-typed-array/issues"
+	},
+	"homepage": "https://github.com/ukrbublik/shm-typed-array",
+	"author": {
+		"name": "Oblogin Denis",
+		"email": "ukrbublik@gmail.com",
+		"url": "https://github.com/ukrbublik"
+	},
+	"scripts": {
+		"install": "node-gyp rebuild",
+		"test" : "node ./example.js"
 	}
 }
