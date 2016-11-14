@@ -1,35 +1,51 @@
 {
-	"name": "shm-typed-array",
-	"version": "0.0.2",
-	"description": "IPC shared memory for NodeJs. Use as Buffer or TypedArray.",
-	"main": "index.js",
-	"repository": {},
-	"keywords": ["ipc", "shm", "shared memory", "typed array", "TypedArray", "Buffer", "Int8Array", "Uint8Array", "Uint8ClampedArray", "Int16Array", "Uint16Array", "Int32Array", "Uint32Array", "Float32Array", "Float64Array"],
-	"author": "ukrbublik <ukrbublik@gmail.com>",
-	"license": "MIT",
-	"dependencies": {
-		"nan": "^2.1.0",
-		"node-cleanup": "^1.0.1"
-	},
-	"os": ["!win32"],
-	"engines": {
-		"node": ">=4.0.0"
-	},
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/ukrbublik/shm-typed-array.git"
-	},
-	"bugs": {
-		"url": "https://github.com/ukrbublik/shm-typed-array/issues"
-	},
-	"homepage": "https://github.com/ukrbublik/shm-typed-array",
-	"author": {
-		"name": "Oblogin Denis",
-		"email": "ukrbublik@gmail.com",
-		"url": "https://github.com/ukrbublik"
-	},
-	"scripts": {
-		"install": "node-gyp configure && node-gyp rebuild",
-		"test" : "node ./example.js"
-	}
+  "name": "shm-typed-array",
+  "version": "0.0.3",
+  "description": "IPC shared memory for NodeJs. Use as Buffer or TypedArray.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ukrbublik/shm-typed-array.git"
+  },
+  "keywords": [
+    "ipc",
+    "shm",
+    "shared memory",
+    "typed array",
+    "TypedArray",
+    "Buffer",
+    "Int8Array",
+    "Uint8Array",
+    "Uint8ClampedArray",
+    "Int16Array",
+    "Uint16Array",
+    "Int32Array",
+    "Uint32Array",
+    "Float32Array",
+    "Float64Array"
+  ],
+  "author": {
+    "name": "Oblogin Denis",
+    "email": "ukrbublik@gmail.com",
+    "url": "https://github.com/ukrbublik"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "nan": "^2.1.0",
+    "node-cleanup": "^1.0.1"
+  },
+  "os": [
+    "!win32"
+  ],
+  "engines": {
+    "node": ">=4.0.0"
+  },
+  "bugs": {
+    "url": "https://github.com/ukrbublik/shm-typed-array/issues"
+  },
+  "homepage": "https://github.com/ukrbublik/shm-typed-array",
+  "scripts": {
+    "install": "node-gyp configure && node-gyp rebuild",
+    "test": "node ./example.js"
+  }
 }
