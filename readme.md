@@ -17,28 +17,26 @@ Tested on Ubuntu 16, Node v6.9.1
 
 # API
 
-<h4>shm.create(size, type)</h4>
+<h4>shm.create (count, typeKey)</h4>
 Create shared memory segment.<br>
-Size in bytes, type - shm.SHMBT_*, see shm.BufferType.<br>
-Returns shared memory Buffer or descendant of TypedArray object, class depends on param "type"<br>
+Count - number of elements (not bytes), typeKey - type of elements, see list below.<br>
+Returns shared memory Buffer or descendant of TypedArray object, class depends on param "typeKey"<br>
 Return object has property 'key' - integer key of created shared memory segment, to use in shm.get().
 
-<h4>shm.get(key, type)</h4>
+<h4>shm.get (key, typeKey)</h4>
 Get created shared memory segment.
 
-<h4>shm.detach(key)</h4>
+<h4>shm.detach (key)</h4>
 Detach shared memory segment.<br>
 If there are no other attaches for this segment, it will be destroyed.
 
-<h4>shm.detachAll()</h4>
+<h4>shm.detachAll ()</h4>
 Detach all shared memory segments.<br>
 Will be automatically called on process exit/termination.
 
-<h4>shm.BufferType</h4>
-Types of shared memory object.<br>
-One of values should be passed to create() and get()
+<h4>Types:</h4>
 <pre>
-{
+shm.BufferType = {
 	'Buffer': shm.SHMBT_BUFFER,
 	'Int8Array': shm.SHMBT_INT8,
 	'Uint8Array': shm.SHMBT_UINT8,
@@ -49,6 +47,18 @@ One of values should be passed to create() and get()
 	'Uint32Array': shm.SHMBT_UINT32,
 	'Float32Array': shm.SHMBT_FLOAT32, 
 	'Float64Array': shm.SHMBT_FLOAT64,
+};
+shm.BufferTypeSizeof = {
+	'Buffer': 1,
+	'Int8Array': 1,
+	'Uint8Array': 1,
+	'Uint8ClampedArray': 1,
+	'Int16Array': 2,
+	'Uint16Array': 2,
+	'Int32Array': 4,
+	'Uint32Array': 4,
+	'Float32Array': 4, 
+	'Float64Array': 8,
 };
 </pre>
 
@@ -66,7 +76,7 @@ const shm = require('./index.js');
 var buf, arr;
 if (cluster.isMaster) {
 	buf = shm.create(4096); //4KB
-	arr = shm.create(1000000*100*4, shm.BufferType.Float32Array); //100M floats
+	arr = shm.create(1000000*100, 'Float32Array'); //100M floats
 	buf[0] = 1;
 	arr[0] = 10.0;
 	console.log('[Master] Typeof buf:', buf.constructor.name, 
@@ -92,7 +102,7 @@ if (cluster.isMaster) {
 		var msg = data.msg;
 		if (msg == 'shm') {
 			buf = shm.get(data.bufKey);
-			arr = shm.get(data.arrKey, shm.BufferType.Float32Array);
+			arr = shm.get(data.arrKey, 'Float32Array');
 			console.log('[Worker] Typeof buf:', buf.constructor.name, 
 				'Typeof arr:', arr.constructor.name);
 			var i = 0;

@@ -39,20 +39,39 @@ const BufferType = {
 	'Float32Array': shm.SHMBT_FLOAT32, 
 	'Float64Array': shm.SHMBT_FLOAT64,
 };
+const BufferTypeSizeof = {
+	'Buffer': 1,
+	'Int8Array': 1,
+	'Uint8Array': 1,
+	'Uint8ClampedArray': 1,
+	'Int16Array': 2,
+	'Uint16Array': 2,
+	'Int32Array': 4,
+	'Uint32Array': 4,
+	'Float32Array': 4, 
+	'Float64Array': 8,
+};
 
 /**
  * Create shared memory segment
- * @param {int} size - size in bytes
- * @param {int} type - SHMBT_*, see BufferType
+ * @param {int} count - numer of elements
+ * @param {string} typeKey - see keys of BufferType
  * @return {mixed} shared memory buffer/array object
- *  Class depends on param type: Buffer (if type == SHMBT_BUFFER) or descendant of TypedArray
- *  Has property 'key' - integer key of created shared memory segment
+ *  Class depends on param typeKey: Buffer or descendant of TypedArray
+ *  Return object has property 'key' - integer key of created shared memory segment
  */
-function create(size, type) {
-	if (type === undefined)
-		type = BufferType.Buffer;
-	if (!(Number.isSafeInteger(size) && size >= sizeMin && size <= sizeMax))
-		throw new RangeError('shm size should be ' + sizeMin + ' .. ' + sizeMax);
+function create(count, typeKey) {
+	if (typeKey === undefined)
+		typeKey = 'Buffer';
+	if (BufferType[typeKey] === undefined)
+		throw new Error("Unknown type key " + typeKey);
+	var size1 = BufferTypeSizeof[typeKey];
+	var type = BufferType[typeKey];
+	var size = size1 * count;
+	var countMin = Math.floor(sizeMin / size1),
+		countMax = Math.floor(sizeMax / size1);
+	if (!(Number.isSafeInteger(count) && count >= countMin && count <= countMax))
+		throw new RangeError('Count should be ' + countMin + ' .. ' + countMax);
 	let key, res;
 	do {
 		key = _keyGen();
@@ -65,12 +84,17 @@ function create(size, type) {
 /**
  * Get shared memory segment
  * @param {int} key - integer key of shared memory segment
- * @param {int} type - see BufferType
+ * @param {string} typeKey - see keys of BufferType
  * @return {mixed} shared memory buffer/array object, see create()
  */
-function get(key, type) {
+function get(key, typeKey) {
+	if (typeKey === undefined)
+		typeKey = 'Buffer';
+	if (BufferType[typeKey] === undefined)
+		throw new Error("Unknown type key " + typeKey);
+	var type = BufferType[typeKey];
 	if (!(Number.isSafeInteger(key) && key >= keyMin && key <= keyMax))
-		throw new RangeError('shm key should be ' + keyMin + ' .. ' + keyMax);
+		throw new RangeError('Shm key should be ' + keyMin + ' .. ' + keyMax);
 	let res = shm.get(key, 0, 0, 0, type);
 	res.key = key;
 	return res;
@@ -108,4 +132,5 @@ module.exports.get = get;
 module.exports.detach = detach;
 module.exports.detachAll = detachAll;
 module.exports.BufferType = BufferType;
+module.exports.BufferTypeSizeof = BufferTypeSizeof;
 module.exports.SizeMax = sizeMax;

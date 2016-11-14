@@ -4,7 +4,7 @@ const shm = require('./index.js');
 var buf, arr;
 if (cluster.isMaster) {
 	buf = shm.create(4096); //4KB
-	arr = shm.create(1000000*1*4, shm.BufferType.Float32Array); //1M floats
+	arr = shm.create(1000000, 'Float32Array'); //1M floats
 	buf[0] = 1;
 	arr[0] = 10.0;
 	console.log('[Master] Typeof buf:', buf.constructor.name, 
@@ -30,7 +30,7 @@ if (cluster.isMaster) {
 		var msg = data.msg;
 		if (msg == 'shm') {
 			buf = shm.get(data.bufKey);
-			arr = shm.get(data.arrKey, shm.BufferType.Float32Array);
+			arr = shm.get(data.arrKey, 'Float32Array');
 			console.log('[Worker] Typeof buf:', buf.constructor.name, 
 					'Typeof arr:', arr.constructor.name);
 			var i = 0;
