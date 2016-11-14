@@ -1,5 +1,5 @@
-IPC shared memory for NodeJs. Use as Buffer or TypedArray.
-<a href='https://www.npmjs.com/package/shm-typed-array'><img src='https://img.shields.io/npm/v/shm-typed-array.svg' /></a>
+IPC shared memory for NodeJs. Use as Buffer or TypedArray.<br>
+<a href='https://www.npmjs.com/package/shm-typed-array'><img src='https://img.shields.io/npm/v/shm-typed-array.svg' /> <img src='https://travis-ci.org/ukrbublik/shm-typed-array.svg?branch=master' /></a>
 
 
 # Install
