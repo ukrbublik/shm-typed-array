@@ -29,7 +29,7 @@
 		"url": "https://github.com/ukrbublik"
 	},
 	"scripts": {
-		"install": "node-gyp rebuild",
+		"install": "node-gyp configure && node-gyp rebuild",
 		"test" : "node ./example.js"
 	}
 }
