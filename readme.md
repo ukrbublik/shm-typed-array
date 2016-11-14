@@ -1,5 +1,5 @@
-
 IPC shared memory for NodeJs. Use as Buffer or TypedArray.
+![version](https://img.shields.io/npm/v/shm-typed-array.svg)
 
 # Install
 ``` bash
