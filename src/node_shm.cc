@@ -160,6 +160,7 @@ namespace node_shm {
 
 	// Arrays to keep info about created segments, call it "info ararys"
 	int shmSegmentsCnt = 0;
+	size_t shmSegmentsBytes = 0;
 	int shmSegmentsCntMax = 0;
 	int* shmSegmentsIds = NULL;
 	void** shmSegmentsAddrs = NULL;
@@ -265,6 +266,7 @@ namespace node_shm {
 				if (force || shmid_ds.shm_nattch == 0) {
 					err = shmctl(resId, IPC_RMID, 0);
 					if (err == 0) {
+						shmSegmentsBytes -= shmid_ds.shm_segsz;
 						return 0; //detached and destroyed
 					} else {
 						if(!onExit)
@@ -339,6 +341,7 @@ namespace node_shm {
 				return Nan::ThrowError(strerror(errno));
 
 			addShmSegmentInfo(resId, res);
+			shmSegmentsBytes += size;
 
 			info.GetReturnValue().Set(Nan::NewTypedBuffer(
 				reinterpret_cast<char*>(res),
@@ -389,6 +392,10 @@ namespace node_shm {
 		info.GetReturnValue().Set(Nan::New<Number>(cnt));
 	}
 
+	NAN_METHOD(getTotalSize) {
+		info.GetReturnValue().Set(Nan::New<Number>(shmSegmentsBytes));
+	}
+
 	// node::AtExit
 	static void AtNodeExit(void*) {
 		detachShmSegments();
@@ -401,6 +408,7 @@ namespace node_shm {
 		Nan::SetMethod(target, "get", get);
 		Nan::SetMethod(target, "detach", detach);
 		Nan::SetMethod(target, "detachAll", detachAll);
+		Nan::SetMethod(target, "getTotalSize", getTotalSize);
 
 		target->Set(Nan::New("IPC_PRIVATE").ToLocalChecked(), Nan::New<Number>(IPC_PRIVATE));
 		target->Set(Nan::New("IPC_CREAT").ToLocalChecked(), Nan::New<Number>(IPC_CREAT));

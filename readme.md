@@ -62,6 +62,9 @@ shm.BufferTypeSizeof = {
 };
 </pre>
 
+<h4>shm.getTotalSize()</h4>
+Get total size of all shared segments in bytes.
+
 <h4>shm.SizeMax</h4>
 Max size of shared memory segment in bytes<br>
 2GB (0x7fffffff) for 64bit, 1GB for 32bit

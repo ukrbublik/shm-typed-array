@@ -131,6 +131,7 @@ module.exports.create = create;
 module.exports.get = get;
 module.exports.detach = detach;
 module.exports.detachAll = detachAll;
+module.exports.getTotalSize = shm.getTotalSize;
 module.exports.BufferType = BufferType;
 module.exports.BufferTypeSizeof = BufferTypeSizeof;
 module.exports.SizeMax = sizeMax;

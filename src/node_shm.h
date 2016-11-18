@@ -111,6 +111,11 @@ namespace node_shm {
 	NAN_METHOD(detachAll);
 
 	/**
+	 * Get total size of all shared segments in bytes
+	 */
+	NAN_METHOD(getTotalSize);
+
+	/**
 	 * Constants to be exported:
 	 * IPC_PRIVATE
 	 * IPC_CREAT
