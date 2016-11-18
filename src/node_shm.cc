@@ -78,23 +78,23 @@ namespace Buffer {
 				ui = Uint8ClampedArray::New(ab, 0, length);
 			break;
 			case SHMBT_INT16:
-				ui = Int16Array::New(ab, 0, length);
+				ui = Int16Array::New(ab, 0, length / 2);
 			break;
 			case SHMBT_UINT16:
-				ui = Uint16Array::New(ab, 0, length);
+				ui = Uint16Array::New(ab, 0, length / 2);
 			break;
 			case SHMBT_INT32:
-				ui = Int32Array::New(ab, 0, length);
+				ui = Int32Array::New(ab, 0, length / 4);
 			break;
 			case SHMBT_UINT32:
-				ui = Uint32Array::New(ab, 0, length);
+				ui = Uint32Array::New(ab, 0, length / 4);
 			break;
 			case SHMBT_FLOAT32:
-				ui = Float32Array::New(ab, 0, length);
+				ui = Float32Array::New(ab, 0, length / 4);
 			break;
 			default:
 			case SHMBT_FLOAT64:
-				ui = Float64Array::New(ab, 0, length);
+				ui = Float64Array::New(ab, 0, length / 8);
 			break;
 		}
 

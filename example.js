@@ -1,10 +1,13 @@
 const cluster = require('cluster');
 const shm = require('./index.js');
+const assert = require('assert');
 
 var buf, arr;
 if (cluster.isMaster) {
 	buf = shm.create(4096); //4KB
 	arr = shm.create(1000000, 'Float32Array'); //1M floats
+	assert.equal(arr.length, 1000000);
+	assert.equal(arr.byteLength, 4*1000000);
 	buf[0] = 1;
 	arr[0] = 10.0;
 	console.log('[Master] Typeof buf:', buf.constructor.name, 
