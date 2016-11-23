@@ -2,20 +2,29 @@ const cluster = require('cluster');
 const shm = require('./index.js');
 const assert = require('assert');
 
+
 var buf, arr;
 if (cluster.isMaster) {
 	buf = shm.create(4096); //4KB
 	arr = shm.create(1000000, 'Float32Array'); //1M floats
+	//bigarr = shm.create(1000*1000*1000*1.5, 'Float32Array'); //6Gb
 	assert.equal(arr.length, 1000000);
 	assert.equal(arr.byteLength, 4*1000000);
 	buf[0] = 1;
 	arr[0] = 10.0;
+	//bigarr[bigarr.length-1] = 6.66;
 	console.log('[Master] Typeof buf:', buf.constructor.name, 
 			'Typeof arr:', arr.constructor.name);
 	
 	var worker = cluster.fork();
 	worker.on('online', function() {
-		this.send({ msg: 'shm', bufKey: buf.key, arrKey: arr.key });
+		this.send({ 
+			msg: 'shm', 
+			bufKey: buf.key, 
+			arrKey: 
+			arr.key, 
+			//bigarrKey: bigarr.key,
+		});
 		var i = 0;
 		setInterval(function() {
 			buf[0] += 1;
@@ -34,8 +43,10 @@ if (cluster.isMaster) {
 		if (msg == 'shm') {
 			buf = shm.get(data.bufKey);
 			arr = shm.get(data.arrKey, 'Float32Array');
+			//bigarr = shm.get(data.bigarrKey, 'Float32Array');
 			console.log('[Worker] Typeof buf:', buf.constructor.name, 
 					'Typeof arr:', arr.constructor.name);
+			//console.log('[Worker] Test bigarr: ', bigarr[bigarr.length-1]);
 			var i = 0;
 			setInterval(function() {
 				console.log(i + ' [Worker] Get buf[0]=', buf[0], 

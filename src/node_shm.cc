@@ -51,7 +51,8 @@ namespace Buffer {
 		Local<ArrayBuffer> ab = arr->Buffer();
 		*/
 
-		Local<ArrayBuffer> ab = ArrayBuffer::New(isolate, data, length);
+		Local<ArrayBuffer> ab = ArrayBuffer::New(isolate, data, length, 
+			ArrayBufferCreationMode::kExternalized);
 		
 		Local<Object> ui;
 		switch(type) {
@@ -156,6 +157,7 @@ namespace node_shm {
 	static void initShmSegmentsInfo();
 	static int detachShmSegment(int resId, void* addr, bool force = false, bool onExit = false);
 	static void addShmSegmentInfo(int resId, void* addr);
+	static bool hasShmSegmentInfo(int resId);
 	static bool removeShmSegmentInfo(int resId);
 	static void FreeCallback(char* data, void* hint);
 	static void Init(Handle<Object> target);
@@ -214,6 +216,12 @@ namespace node_shm {
 		shmSegmentsCnt++;
 	}
 
+  static bool hasShmSegmentInfo(int resId) {
+		int* end = shmSegmentsIds + shmSegmentsCnt;
+		int* found = std::find(shmSegmentsIds, shmSegmentsIds + shmSegmentsCnt, resId);
+		return (found != end);
+  }
+
 	// Remove segment from info arrays
 	static bool removeShmSegmentInfo(int resId) {
 		int* end = shmSegmentsIds + shmSegmentsCnt;
@@ -241,25 +249,25 @@ namespace node_shm {
 	// Returns count of left attaches or -1 on error
 	static int detachShmSegment(int resId, void* addr, bool force, bool onExit) {
 		int err;
-		struct shmid_ds shmid_ds;
+		struct shmid_ds shminf;
 		//detach
 		err = shmdt(addr);
 		if (err == 0) {
 			//get stat
-			err = shmctl(resId, IPC_STAT, &shmid_ds);
+			err = shmctl(resId, IPC_STAT, &shminf);
 			if (err == 0) {
 				//destroy if there are no more attaches or force==true
-				if (force || shmid_ds.shm_nattch == 0) {
+				if (force || shminf.shm_nattch == 0) {
 					err = shmctl(resId, IPC_RMID, 0);
 					if (err == 0) {
-						shmSegmentsBytes -= shmid_ds.shm_segsz;
+						shmSegmentsBytes -= shminf.shm_segsz;
 						return 0; //detached and destroyed
 					} else {
 						if(!onExit)
 							Nan::ThrowError(strerror(errno));
 					}
 				} else {
-					return shmid_ds.shm_nattch; //detached, but not destroyed
+					return shminf.shm_nattch; //detached, but not destroyed
 				}
 			} else {
 				if(!onExit)
@@ -292,13 +300,14 @@ namespace node_shm {
 	NAN_METHOD(get) {
 		Nan::HandleScope scope;
 		int err;
-		struct shmid_ds shmid_ds;
+		struct shmid_ds shminf;
 		key_t key = info[0]->Uint32Value();
 		size_t count = info[1]->Uint32Value();
 		int shmflg = info[2]->Uint32Value();
 		int at_shmflg = info[3]->Uint32Value();
 		ShmBufferType type = (ShmBufferType) info[4]->Int32Value();
 		size_t size = count * getSize1ForShmBufferType(type);
+		bool isCreate = (size > 0);
 		
 		int resId = shmget(key, size, shmflg);
 		if (resId == -1) {
@@ -314,11 +323,12 @@ namespace node_shm {
 					return Nan::ThrowError(strerror(errno));
 			}
 		} else {
-			if (size == 0) {
-				err = shmctl(resId, IPC_STAT, &shmid_ds);
-				if (err == 0)
-					size = shmid_ds.shm_segsz;
-				else
+			if (!isCreate) {
+				err = shmctl(resId, IPC_STAT, &shminf);
+				if (err == 0) {
+					size = shminf.shm_segsz;
+					count = size / getSize1ForShmBufferType(type);
+				} else
 					return Nan::ThrowError(strerror(errno));
 			}
 			
@@ -326,8 +336,10 @@ namespace node_shm {
 			if (res == (void *)-1)
 				return Nan::ThrowError(strerror(errno));
 
-			addShmSegmentInfo(resId, res);
-			shmSegmentsBytes += size;
+			if (!hasShmSegmentInfo(resId)) {
+				addShmSegmentInfo(resId, res);
+				shmSegmentsBytes += size;
+			}
 
 			info.GetReturnValue().Set(Nan::NewTypedBuffer(
 				reinterpret_cast<char*>(res),

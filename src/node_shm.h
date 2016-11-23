@@ -11,6 +11,7 @@
 using namespace node;
 using namespace v8;
 
+
 /*
 namespace imp {
 	static const size_t kMaxLength = 0x3fffffff;
@@ -45,6 +46,7 @@ enum ShmBufferType {
 inline int getSize1ForShmBufferType(ShmBufferType type) {
 	size_t size1 = 0;
 	switch(type) {
+		case SHMBT_BUFFER:
 		case SHMBT_INT8:
 		case SHMBT_UINT8:
 		case SHMBT_UINT8CLAMPED:
