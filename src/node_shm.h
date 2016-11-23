@@ -18,7 +18,7 @@ namespace imp {
 
 namespace node {
 namespace Buffer {
-	// 2GB (0x7fffffff) for 64bit, 1GB for 32bit
+	// 2^31 for 64bit, 2^30 for 32bit
 	static const unsigned int kMaxLength = 
 		sizeof(int32_t) == sizeof(intptr_t) ? 0x3fffffff : 0x7fffffff;
 }

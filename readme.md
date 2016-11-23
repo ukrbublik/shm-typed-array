@@ -55,7 +55,7 @@ Get total size of all shared segments in bytes.
 
 <h4>shm.LengthMax</h4>
 Max length of shared memory segment (count of elements, not bytes)<br>
-2^32 for 64bit, 2^31 for 32bit
+2^31 for 64bit, 2^30 for 32bit
 
 # Usage
 See example.js
