@@ -48,26 +48,14 @@ shm.BufferType = {
 	'Float32Array': shm.SHMBT_FLOAT32, 
 	'Float64Array': shm.SHMBT_FLOAT64,
 };
-shm.BufferTypeSizeof = {
-	'Buffer': 1,
-	'Int8Array': 1,
-	'Uint8Array': 1,
-	'Uint8ClampedArray': 1,
-	'Int16Array': 2,
-	'Uint16Array': 2,
-	'Int32Array': 4,
-	'Uint32Array': 4,
-	'Float32Array': 4, 
-	'Float64Array': 8,
-};
 </pre>
 
 <h4>shm.getTotalSize()</h4>
 Get total size of all shared segments in bytes.
 
-<h4>shm.SizeMax</h4>
-Max size of shared memory segment in bytes<br>
-2GB (0x7fffffff) for 64bit, 1GB for 32bit
+<h4>shm.LengthMax</h4>
+Max length of shared memory segment (count of elements, not bytes)<br>
+2^32 for 64bit, 2^31 for 32bit
 
 # Usage
 See example.js

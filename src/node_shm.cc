@@ -30,7 +30,7 @@ namespace Buffer {
 	MaybeLocal<Object> NewTyped(
 		Isolate* isolate, 
 		char* data, 
-		size_t length
+		size_t count
 	#if NODE_MODULE_VERSION > IOJS_2_0_MODULE_VERSION
 	    , node::Buffer::FreeCallback callback
 	#else
@@ -39,62 +39,49 @@ namespace Buffer {
 	    , void *hint
 		, ShmBufferType type
 	) {
+		size_t length = count * getSize1ForShmBufferType(type);
+
 		EscapableHandleScope scope(isolate);
 
-		/**
-		 * Bad way, causes segmentation fault!
-		 * Because we can't use this:
-		 *  CallbackInfo::New(isolate, ab, callback, data, hint);
-		 * as in declaration of 
-		 *  node::Buffer::New(Isolate*, char*, size_t, FreeCallback, void*)
-		 *  (node_buffer.cc)
-		 * because it's private
-		 **
-
-		Local<ArrayBuffer> ab = ArrayBuffer::New(
-			isolate,
-			data,
-			length,
-			ArrayBufferCreationMode::kInternalized);
-		if (data == nullptr)
-			ab->Neuter();
-		*/
-
+		/*
 		MaybeLocal<Object> mlarr = node::Buffer::New(
 			isolate, data, length, callback, hint);
 		Local<Object> larr = mlarr.ToLocalChecked();
 		Uint8Array* arr = (Uint8Array*) *larr;
 		Local<ArrayBuffer> ab = arr->Buffer();
+		*/
+
+		Local<ArrayBuffer> ab = ArrayBuffer::New(isolate, data, length);
 		
 		Local<Object> ui;
 		switch(type) {
 			case SHMBT_INT8:
-				ui = Int8Array::New(ab, 0, length);
+				ui = Int8Array::New(ab, 0, count);
 			break;
 			case SHMBT_UINT8:
-				ui = Uint8Array::New(ab, 0, length);
+				ui = Uint8Array::New(ab, 0, count);
 			break;
 			case SHMBT_UINT8CLAMPED:
-				ui = Uint8ClampedArray::New(ab, 0, length);
+				ui = Uint8ClampedArray::New(ab, 0, count);
 			break;
 			case SHMBT_INT16:
-				ui = Int16Array::New(ab, 0, length / 2);
+				ui = Int16Array::New(ab, 0, count);
 			break;
 			case SHMBT_UINT16:
-				ui = Uint16Array::New(ab, 0, length / 2);
+				ui = Uint16Array::New(ab, 0, count);
 			break;
 			case SHMBT_INT32:
-				ui = Int32Array::New(ab, 0, length / 4);
+				ui = Int32Array::New(ab, 0, count);
 			break;
 			case SHMBT_UINT32:
-				ui = Uint32Array::New(ab, 0, length / 4);
+				ui = Uint32Array::New(ab, 0, count);
 			break;
 			case SHMBT_FLOAT32:
-				ui = Float32Array::New(ab, 0, length / 4);
+				ui = Float32Array::New(ab, 0, count);
 			break;
 			default:
 			case SHMBT_FLOAT64:
-				ui = Float64Array::New(ab, 0, length / 8);
+				ui = Float64Array::New(ab, 0, count);
 			break;
 		}
 
@@ -110,7 +97,7 @@ namespace Nan {
 
 	inline MaybeLocal<Object> NewTypedBuffer(
 	      char *data
-	    , size_t length
+	    , size_t count
 	#if NODE_MODULE_VERSION > IOJS_2_0_MODULE_VERSION
 	    , node::Buffer::FreeCallback callback
 	#else
@@ -119,20 +106,19 @@ namespace Nan {
 	    , void *hint
 	    , ShmBufferType type
 	) {
-	    // arbitrary buffer lengths requires
-	    // NODE_MODULE_VERSION >= IOJS_3_0_MODULE_VERSION
-	    //assert(length <= imp::kMaxLength && "too large buffer");
-	    assert(length <= node::Buffer::kMaxLength && "too large buffer");
+		size_t length = count * getSize1ForShmBufferType(type);
 
 		if (type != SHMBT_BUFFER) {
+	  	assert(count <= node::Buffer::kMaxLength && "too large typed buffer");
 			#if NODE_MODULE_VERSION > IOJS_2_0_MODULE_VERSION
 			    return node::Buffer::NewTyped(
-			        Isolate::GetCurrent(), data, length, callback, hint, type);
+			        Isolate::GetCurrent(), data, count, callback, hint, type);
 			#else
 			    return MaybeLocal<v8::Object>(node::Buffer::NewTyped(
-			        Isolate::GetCurrent(), data, length, callback, hint, type));
+			        Isolate::GetCurrent(), data, count, callback, hint, type));
 			#endif
-	    } else {
+	  } else {
+	  	assert(length <= node::Buffer::kMaxLength && "too large buffer");
 			#if NODE_MODULE_VERSION > IOJS_2_0_MODULE_VERSION
 			    return node::Buffer::New(
 			        Isolate::GetCurrent(), data, length, callback, hint);
@@ -140,7 +126,7 @@ namespace Nan {
 			    return MaybeLocal<v8::Object>(node::Buffer::New(
 			        Isolate::GetCurrent(), data, length, callback, hint));
 			#endif
-	    }
+	  }
 
 	}
 
@@ -306,13 +292,13 @@ namespace node_shm {
 	NAN_METHOD(get) {
 		Nan::HandleScope scope;
 		int err;
-		extern int errno;
 		struct shmid_ds shmid_ds;
 		key_t key = info[0]->Uint32Value();
-		size_t size = info[1]->Uint32Value();
+		size_t count = info[1]->Uint32Value();
 		int shmflg = info[2]->Uint32Value();
 		int at_shmflg = info[3]->Uint32Value();
 		ShmBufferType type = (ShmBufferType) info[4]->Int32Value();
+		size_t size = count * getSize1ForShmBufferType(type);
 		
 		int resId = shmget(key, size, shmflg);
 		if (resId == -1) {
@@ -345,7 +331,7 @@ namespace node_shm {
 
 			info.GetReturnValue().Set(Nan::NewTypedBuffer(
 				reinterpret_cast<char*>(res),
-				size,
+				count,
 				FreeCallback,
 				reinterpret_cast<void*>(static_cast<intptr_t>(resId)),
 				type

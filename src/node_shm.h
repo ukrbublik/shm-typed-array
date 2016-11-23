@@ -42,6 +42,31 @@ enum ShmBufferType {
 	SHMBT_FLOAT64
 };
 
+inline int getSize1ForShmBufferType(ShmBufferType type) {
+	size_t size1 = 0;
+	switch(type) {
+		case SHMBT_INT8:
+		case SHMBT_UINT8:
+		case SHMBT_UINT8CLAMPED:
+			size1 = 1;
+		break;
+		case SHMBT_INT16:
+		case SHMBT_UINT16:
+			size1 = 2;
+		break;
+		case SHMBT_INT32:
+		case SHMBT_UINT32:
+		case SHMBT_FLOAT32:
+			size1 = 4;
+		break;
+		default:
+		case SHMBT_FLOAT64:
+			size1 = 8;
+		break;
+	}
+	return size1;
+}
+
 
 namespace node {
 namespace Buffer {
@@ -87,7 +112,7 @@ namespace node_shm {
 	 * Create or get shared memory
 	 * Params:
 	 *  key_t key
-	 *  size_t size
+	 *  size_t count - count of elements, not bytes
 	 *  int shmflg - flags for shmget()
 	 *  int at_shmflg - flags for shmat()
 	 *  enum ShmBufferType type
@@ -121,7 +146,7 @@ namespace node_shm {
 	 * IPC_CREAT
 	 * IPC_EXCL
 	 * SHM_RDONLY
-	 * NODE_BUFFER_MAX_LENGTH
+	 * NODE_BUFFER_MAX_LENGTH (count of elements, not bytes)
 	 * enum ShmBufferType: 
 	 *  SHMBT_BUFFER, SHMBT_INT8, SHMBT_UINT8, SHMBT_UINT8CLAMPED, 
 	 *  SHMBT_INT16, SHMBT_UINT16, SHMBT_INT32, SHMBT_UINT32, 

@@ -7,12 +7,11 @@ const uint32Max = Math.pow(2,32) - 1;
 const keyMin = 1;
 const keyMax = uint32Max - keyMin;
 const perm = Number.parseInt('660', 8);
-const sizeMin = 1;
+const lengthMin = 1;
 /**
- * Max size of shared memory segment in bytes
- * 2GB (0x7fffffff) for 64bit, 1GB for 32bit
+ * Max length of shared memory segment (count of elements, not bytes)
  */
-const sizeMax = shm.NODE_BUFFER_MAX_LENGTH;
+const lengthMax = shm.NODE_BUFFER_MAX_LENGTH;
 
 const cleanup = function () {
 	try {
@@ -65,17 +64,15 @@ function create(count, typeKey) {
 		typeKey = 'Buffer';
 	if (BufferType[typeKey] === undefined)
 		throw new Error("Unknown type key " + typeKey);
-	var size1 = BufferTypeSizeof[typeKey];
 	var type = BufferType[typeKey];
-	var size = size1 * count;
-	var countMin = Math.floor(sizeMin / size1),
-		countMax = Math.floor(sizeMax / size1);
-	if (!(Number.isSafeInteger(count) && count >= countMin && count <= countMax))
-		throw new RangeError('Count should be ' + countMin + ' .. ' + countMax);
+	//var size1 = BufferTypeSizeof[typeKey];
+	//var size = size1 * count;
+	if (!(Number.isSafeInteger(count) && count >= lengthMin && count <= lengthMax))
+		throw new RangeError('Count should be ' + lengthMin + ' .. ' + lengthMax);
 	let key, res;
 	do {
 		key = _keyGen();
-		res = shm.get(key, size, shm.IPC_CREAT|shm.IPC_EXCL|perm, 0, type);
+		res = shm.get(key, count, shm.IPC_CREAT|shm.IPC_EXCL|perm, 0, type);
 	} while(!res);
 	res.key = key;
 	return res;
@@ -133,5 +130,4 @@ module.exports.detach = detach;
 module.exports.detachAll = detachAll;
 module.exports.getTotalSize = shm.getTotalSize;
 module.exports.BufferType = BufferType;
-module.exports.BufferTypeSizeof = BufferTypeSizeof;
-module.exports.SizeMax = sizeMax;
+module.exports.LengthMax = lengthMax;
