@@ -5,6 +5,19 @@ const assert = require('assert');
 
 var buf, arr;
 if (cluster.isMaster) {
+	// Assert that creating shm with same key twice will fail
+	var key = 1234567890;
+	var a = shm.create(10, 'Float32Array', key);
+	var b = shm.create(10, 'Float32Array', key);
+	assert(a instanceof Float32Array);
+	assert(b === null);
+
+	// Assert that getting shm by unexisting key will fail
+	var unexisting_key = 1234567891;
+	var c = shm.get(unexisting_key, 'Buffer');
+	assert(c === null);
+
+	// Test using shm between 2 node processes
 	buf = shm.create(4096); //4KB
 	arr = shm.create(1000000, 'Float32Array'); //1M floats
 	//bigarr = shm.create(1000*1000*1000*1.5, 'Float32Array'); //6Gb
@@ -74,7 +87,7 @@ function groupSuicide() {
 }
 
 /**
- * Ouput
+ * Output
  *
 
 [Master] Typeof buf: Buffer Typeof arr: Float32Array

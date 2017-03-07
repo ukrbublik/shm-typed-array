@@ -53,28 +53,40 @@ const BufferTypeSizeof = {
 
 /**
  * Create shared memory segment
- * @param {int} count - numer of elements
+ * @param {int} count - number of elements
  * @param {string} typeKey - see keys of BufferType
- * @return {mixed} shared memory buffer/array object
+ * @param {int/null} key - integer key of shared memory segment, or null to autogenerate
+ * @return {mixed/null} shared memory buffer/array object, or null on error
  *  Class depends on param typeKey: Buffer or descendant of TypedArray
  *  Return object has property 'key' - integer key of created shared memory segment
  */
-function create(count, typeKey) {
+function create(count, typeKey, key = null) {
 	if (typeKey === undefined)
 		typeKey = 'Buffer';
 	if (BufferType[typeKey] === undefined)
 		throw new Error("Unknown type key " + typeKey);
+	if (key !== null) {
+		key = parseInt(key);
+		if (isNaN(key))
+			throw new Error("key should be integer");
+	}
 	var type = BufferType[typeKey];
 	//var size1 = BufferTypeSizeof[typeKey];
 	//var size = size1 * count;
 	if (!(Number.isSafeInteger(count) && count >= lengthMin && count <= lengthMax))
 		throw new RangeError('Count should be ' + lengthMin + ' .. ' + lengthMax);
-	let key, res;
-	do {
-		key = _keyGen();
+	let res;
+	if (key) {
 		res = shm.get(key, count, shm.IPC_CREAT|shm.IPC_EXCL|perm, 0, type);
-	} while(!res);
-	res.key = key;
+	} else {
+		do {
+			key = _keyGen();
+			res = shm.get(key, count, shm.IPC_CREAT|shm.IPC_EXCL|perm, 0, type);
+		} while(!res);
+	}
+	if (res) {
+		res.key = key;
+	}
 	return res;
 }
 
@@ -82,7 +94,7 @@ function create(count, typeKey) {
  * Get shared memory segment
  * @param {int} key - integer key of shared memory segment
  * @param {string} typeKey - see keys of BufferType
- * @return {mixed} shared memory buffer/array object, see create()
+ * @return {mixed/null} shared memory buffer/array object, see create(), or null on error
  */
 function get(key, typeKey) {
 	if (typeKey === undefined)
@@ -93,7 +105,9 @@ function get(key, typeKey) {
 	if (!(Number.isSafeInteger(key) && key >= keyMin && key <= keyMax))
 		throw new RangeError('Shm key should be ' + keyMin + ' .. ' + keyMax);
 	let res = shm.get(key, 0, 0, 0, type);
-	res.key = key;
+	if (res) {
+		res.key = key;
+	}
 	return res;
 }
 
