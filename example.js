@@ -10,6 +10,7 @@ if (cluster.isMaster) {
 	var a = shm.create(10, 'Float32Array', key);
 	var b = shm.create(10, 'Float32Array', key);
 	assert(a instanceof Float32Array);
+	assert(a.key == key);
 	assert(b === null);
 
 	// Assert that getting shm by unexisting key will fail
