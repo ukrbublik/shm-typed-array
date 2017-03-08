@@ -60,15 +60,16 @@ const BufferTypeSizeof = {
  *  Class depends on param typeKey: Buffer or descendant of TypedArray
  *  Return object has property 'key' - integer key of created shared memory segment
  */
-function create(count, typeKey, key = null) {
+function create(count, typeKey /*= 'Buffer'*/, key /*= null*/) {
 	if (typeKey === undefined)
 		typeKey = 'Buffer';
+	if (key === undefined)
+		key = null;
 	if (BufferType[typeKey] === undefined)
 		throw new Error("Unknown type key " + typeKey);
 	if (key !== null) {
-		key = parseInt(key);
-		if (isNaN(key))
-			throw new Error("key should be integer");
+		if (!(Number.isSafeInteger(key) && key >= keyMin && key <= keyMax))
+			throw new RangeError('Shm key should be ' + keyMin + ' .. ' + keyMax);
 	}
 	var type = BufferType[typeKey];
 	//var size1 = BufferTypeSizeof[typeKey];
@@ -96,7 +97,7 @@ function create(count, typeKey, key = null) {
  * @param {string} typeKey - see keys of BufferType
  * @return {mixed/null} shared memory buffer/array object, see create(), or null on error
  */
-function get(key, typeKey) {
+function get(key, typeKey /*= 'Buffer'*/) {
 	if (typeKey === undefined)
 		typeKey = 'Buffer';
 	if (BufferType[typeKey] === undefined)
@@ -118,7 +119,7 @@ function get(key, typeKey) {
  * @param {bool} forceDestroy - true to destroy even there are other attaches
  * @return {int} count of left attaches or -1 on error
  */
-function detach(key, forceDestroy) {
+function detach(key, forceDestroy /*= false*/) {
 	if (forceDestroy === undefined)
 		forceDestroy = false;
 	return shm.detach(key, forceDestroy);

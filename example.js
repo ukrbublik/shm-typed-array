@@ -101,7 +101,7 @@ function groupSuicide() {
 3 [Master] Set buf[0]= 5  arr[0]= 0.625
 3 [Worker] Get buf[0]= 5  arr[0]= null
 4 [Master] Set buf[0]= 6  arr[0]= 0.3125
-shm segments destroyed: 2
+shm segments destroyed: 3
 
 
 */

@@ -17,11 +17,11 @@ Tested on Ubuntu 16, Node v6.9.1
 
 # API
 
-<h4>shm.create (count, typeKey, key = null)</h4>
+<h4>shm.create (count, typeKey [, key])</h4>
 Create shared memory segment.<br>
-count - number of elements (not bytes), typeKey - type of elements, see list below, key - optional integer to create shm by specific key.<br>
+count - number of elements (not bytes), typeKey - type of elements ('Buffer' by default, see list below), key - optional integer to create shm with specific key.<br>
 Returns shared memory Buffer or descendant of TypedArray object, class depends on param "typeKey". Or returns null if shm can't be created.<br>
-Return object has property 'key' - integer key of created shared memory segment, to use in shm.get().
+Returned object has property 'key' - integer key of created shared memory segment, to use in shm.get().
 
 <h4>shm.get (key, typeKey)</h4>
 Get created shared memory segment. Returns null if shm can't be opened.
