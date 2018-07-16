@@ -301,7 +301,7 @@ namespace node_shm {
 		Nan::HandleScope scope;
 		int err;
 		struct shmid_ds shminf;
-		key_t key = info[0]->Uint32Value();
+		unsigned long key = info[0]->Uint32Value();
 		size_t count = info[1]->Uint32Value();
 		int shmflg = info[2]->Uint32Value();
 		int at_shmflg = info[3]->Uint32Value();
