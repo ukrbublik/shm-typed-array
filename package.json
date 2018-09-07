@@ -3,6 +3,7 @@
   "version": "0.0.10",
   "description": "IPC shared memory for NodeJs. Use as Buffer or TypedArray.",
   "main": "index.js",
+  "types": "index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/ukrbublik/shm-typed-array.git"
@@ -47,6 +48,12 @@
   "homepage": "https://github.com/ukrbublik/shm-typed-array",
   "scripts": {
     "install": "node-gyp configure && node-gyp rebuild",
-    "test": "node ./example.js"
+    "test": "node test/example.js",
+    "test-types": "typings-tester --config test/tsconfig.json test/typings.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^10.9.4",
+    "typescript": "^2.9.2",
+    "typings-tester": "^0.3.1"
   }
 }

@@ -11,7 +11,7 @@ Manual build:
 ``` bash
 node-gyp configure
 node-gyp build
-node example.js
+node test/example.js
 ```
 Tested on Ubuntu 16, Node v6.9.1
 
@@ -45,7 +45,7 @@ shm.BufferType = {
 	'Uint16Array': shm.SHMBT_UINT16,
 	'Int32Array': shm.SHMBT_INT32,
 	'Uint32Array': shm.SHMBT_UINT32,
-	'Float32Array': shm.SHMBT_FLOAT32, 
+	'Float32Array': shm.SHMBT_FLOAT32,
 	'Float64Array': shm.SHMBT_FLOAT64,
 };
 </pre>
@@ -70,7 +70,7 @@ if (cluster.isMaster) {
 	arr = shm.create(1000000*100, 'Float32Array'); //100M floats
 	buf[0] = 1;
 	arr[0] = 10.0;
-	console.log('[Master] Typeof buf:', buf.constructor.name, 
+	console.log('[Master] Typeof buf:', buf.constructor.name,
 		'Typeof arr:', arr.constructor.name);
 	
 	var worker = cluster.fork();
@@ -80,25 +80,25 @@ if (cluster.isMaster) {
 		setInterval(function() {
 			buf[0] += 1;
 			arr[0] /= 2;
-			console.log(i + ' [Master] Set buf[0]=', buf[0], 
+			console.log(i + ' [Master] Set buf[0]=', buf[0],
 				' arr[0]=', arr ? arr[0] : null);
 			i++;
 			if (i == 5) {
 				groupSuicide();
 			}
 		}, 500);
-	});	
+	});
 } else {
 	process.on('message', function(data) {
 		var msg = data.msg;
 		if (msg == 'shm') {
 			buf = shm.get(data.bufKey);
 			arr = shm.get(data.arrKey, 'Float32Array');
-			console.log('[Worker] Typeof buf:', buf.constructor.name, 
+			console.log('[Worker] Typeof buf:', buf.constructor.name,
 				'Typeof arr:', arr.constructor.name);
 			var i = 0;
 			setInterval(function() {
-				console.log(i + ' [Worker] Get buf[0]=', buf[0], 
+				console.log(i + ' [Worker] Get buf[0]=', buf[0],
 					' arr[0]=', arr ? arr[0] : null);
 				i++;
 				if (i == 2) {
