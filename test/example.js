@@ -1,5 +1,5 @@
 const cluster = require('cluster');
-const shm = require('./index.js');
+const shm = require('../index.js');
 const assert = require('assert');
 
 
@@ -27,30 +27,30 @@ if (cluster.isMaster) {
 	buf[0] = 1;
 	arr[0] = 10.0;
 	//bigarr[bigarr.length-1] = 6.66;
-	console.log('[Master] Typeof buf:', buf.constructor.name, 
+	console.log('[Master] Typeof buf:', buf.constructor.name,
 			'Typeof arr:', arr.constructor.name);
 	
 	var worker = cluster.fork();
 	worker.on('online', function() {
-		this.send({ 
-			msg: 'shm', 
-			bufKey: buf.key, 
-			arrKey: 
-			arr.key, 
+		this.send({
+			msg: 'shm',
+			bufKey: buf.key,
+			arrKey:
+			arr.key,
 			//bigarrKey: bigarr.key,
 		});
 		var i = 0;
 		setInterval(function() {
 			buf[0] += 1;
 			arr[0] /= 2;
-			console.log(i + ' [Master] Set buf[0]=', buf[0], 
+			console.log(i + ' [Master] Set buf[0]=', buf[0],
 				' arr[0]=', arr ? arr[0] : null);
 			i++;
 			if (i == 5) {
 				groupSuicide();
 			}
 		}, 500);
-	});	
+	});
 } else {
 	process.on('message', function(data) {
 		var msg = data.msg;
@@ -58,12 +58,12 @@ if (cluster.isMaster) {
 			buf = shm.get(data.bufKey);
 			arr = shm.get(data.arrKey, 'Float32Array');
 			//bigarr = shm.get(data.bigarrKey, 'Float32Array');
-			console.log('[Worker] Typeof buf:', buf.constructor.name, 
+			console.log('[Worker] Typeof buf:', buf.constructor.name,
 					'Typeof arr:', arr.constructor.name);
 			//console.log('[Worker] Test bigarr: ', bigarr[bigarr.length-1]);
 			var i = 0;
 			setInterval(function() {
-				console.log(i + ' [Worker] Get buf[0]=', buf[0], 
+				console.log(i + ' [Worker] Get buf[0]=', buf[0],
 					' arr[0]=', arr ? arr[0] : null);
 				i++;
 				if (i == 2) {

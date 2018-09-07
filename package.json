@@ -48,7 +48,7 @@
   "homepage": "https://github.com/ukrbublik/shm-typed-array",
   "scripts": {
     "install": "node-gyp configure && node-gyp rebuild",
-    "test": "node example.js",
+    "test": "node test/example.js",
     "test-types": "typings-tester --config test/tsconfig.json test/typings.ts"
   },
   "devDependencies": {
