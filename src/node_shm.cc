@@ -300,11 +300,11 @@ namespace node_shm {
 		Nan::HandleScope scope;
 		int err;
 		struct shmid_ds shminf;
-		key_t key = Nan::To<uint32_t>(info[0]).ToChecked();
-		size_t count = Nan::To<uint32_t>(info[1]).ToChecked();
-		int shmflg = Nan::To<uint32_t>(info[2]).ToChecked();
-		int at_shmflg = Nan::To<uint32_t>(info[3]).ToChecked();
-		ShmBufferType type = (ShmBufferType) Nan::To<int32_t>(info[4]).ToChecked();
+		key_t key = Nan::To<uint32_t>(info[0]).FromJust();
+		size_t count = Nan::To<uint32_t>(info[1]).FromJust();
+		int shmflg = Nan::To<uint32_t>(info[2]).FromJust();
+		int at_shmflg = Nan::To<uint32_t>(info[3]).FromJust();
+		ShmBufferType type = (ShmBufferType) Nan::To<int32_t>(info[4]).FromJust();
 		size_t size = count * getSize1ForShmBufferType(type);
 		bool isCreate = (size > 0);
 		
@@ -352,8 +352,8 @@ namespace node_shm {
 
 	NAN_METHOD(detach) {
 		Nan::HandleScope scope;
-		key_t key = Nan::To<uint32_t>(info[0]).ToChecked();
-		bool forceDestroy = Nan::To<bool>(info[1]).ToChecked();
+		key_t key = Nan::To<uint32_t>(info[0]).FromJust();
+		bool forceDestroy = Nan::To<bool>(info[1]).FromJust();
 
 		int resId = shmget(key, 0, 0);
 		if (resId == -1) {
