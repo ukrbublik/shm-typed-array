@@ -139,7 +139,6 @@ namespace node {
 namespace node_shm {
 
 	using node::AtExit;
-	using v8::Handle;
 	using v8::Local;
 	using v8::Number;
 	using v8::Object;
@@ -160,7 +159,7 @@ namespace node_shm {
 	static bool hasShmSegmentInfo(int resId);
 	static bool removeShmSegmentInfo(int resId);
 	static void FreeCallback(char* data, void* hint);
-	static void Init(Handle<Object> target);
+	static void Init(Local<Object> target);
 	static void AtNodeExit(void*);
 
 
@@ -301,11 +300,11 @@ namespace node_shm {
 		Nan::HandleScope scope;
 		int err;
 		struct shmid_ds shminf;
-		key_t key = info[0]->Uint32Value();
-		size_t count = info[1]->Uint32Value();
-		int shmflg = info[2]->Uint32Value();
-		int at_shmflg = info[3]->Uint32Value();
-		ShmBufferType type = (ShmBufferType) info[4]->Int32Value();
+		key_t key = Nan::To<uint32_t>(info[0]).ToChecked();
+		size_t count = Nan::To<uint32_t>(info[1]).ToChecked();
+		int shmflg = Nan::To<uint32_t>(info[2]).ToChecked();
+		int at_shmflg = Nan::To<uint32_t>(info[3]).ToChecked();
+		ShmBufferType type = (ShmBufferType) Nan::To<int32_t>(info[4]).ToChecked();
 		size_t size = count * getSize1ForShmBufferType(type);
 		bool isCreate = (size > 0);
 		
@@ -353,8 +352,8 @@ namespace node_shm {
 
 	NAN_METHOD(detach) {
 		Nan::HandleScope scope;
-		key_t key = info[0]->Uint32Value();
-		bool forceDestroy = info[1]->BooleanValue();
+		key_t key = Nan::To<uint32_t>(info[0]).ToChecked();
+		bool forceDestroy = Nan::To<bool>(info[1]).ToChecked();
 
 		int resId = shmget(key, 0, 0);
 		if (resId == -1) {
@@ -400,7 +399,7 @@ namespace node_shm {
 	}
 
 	// Init module
-	static void Init(Handle<Object> target) {
+	static void Init(Local<Object> target) {
 		initShmSegmentsInfo();
 		
 		Nan::SetMethod(target, "get", get);
@@ -408,22 +407,22 @@ namespace node_shm {
 		Nan::SetMethod(target, "detachAll", detachAll);
 		Nan::SetMethod(target, "getTotalSize", getTotalSize);
 
-		target->Set(Nan::New("IPC_PRIVATE").ToLocalChecked(), Nan::New<Number>(IPC_PRIVATE));
-		target->Set(Nan::New("IPC_CREAT").ToLocalChecked(), Nan::New<Number>(IPC_CREAT));
-		target->Set(Nan::New("IPC_EXCL").ToLocalChecked(), Nan::New<Number>(IPC_EXCL));
-		target->Set(Nan::New("SHM_RDONLY").ToLocalChecked(), Nan::New<Number>(SHM_RDONLY));
-		target->Set(Nan::New("NODE_BUFFER_MAX_LENGTH").ToLocalChecked(), Nan::New<Number>(node::Buffer::kMaxLength));
+		Nan::Set(target, Nan::New("IPC_PRIVATE").ToLocalChecked(), Nan::New<Number>(IPC_PRIVATE));
+		Nan::Set(target, Nan::New("IPC_CREAT").ToLocalChecked(), Nan::New<Number>(IPC_CREAT));
+		Nan::Set(target, Nan::New("IPC_EXCL").ToLocalChecked(), Nan::New<Number>(IPC_EXCL));
+		Nan::Set(target, Nan::New("SHM_RDONLY").ToLocalChecked(), Nan::New<Number>(SHM_RDONLY));
+		Nan::Set(target, Nan::New("NODE_BUFFER_MAX_LENGTH").ToLocalChecked(), Nan::New<Number>(node::Buffer::kMaxLength));
 		//enum ShmBufferType
-		target->Set(Nan::New("SHMBT_BUFFER").ToLocalChecked(), Nan::New<Number>(SHMBT_BUFFER));
-		target->Set(Nan::New("SHMBT_INT8").ToLocalChecked(), Nan::New<Number>(SHMBT_INT8));
-		target->Set(Nan::New("SHMBT_UINT8").ToLocalChecked(), Nan::New<Number>(SHMBT_UINT8));
-		target->Set(Nan::New("SHMBT_UINT8CLAMPED").ToLocalChecked(), Nan::New<Number>(SHMBT_UINT8CLAMPED));
-		target->Set(Nan::New("SHMBT_INT16").ToLocalChecked(), Nan::New<Number>(SHMBT_INT16));
-		target->Set(Nan::New("SHMBT_UINT16").ToLocalChecked(), Nan::New<Number>(SHMBT_UINT16));
-		target->Set(Nan::New("SHMBT_INT32").ToLocalChecked(), Nan::New<Number>(SHMBT_INT32));
-		target->Set(Nan::New("SHMBT_UINT32").ToLocalChecked(), Nan::New<Number>(SHMBT_UINT32));
-		target->Set(Nan::New("SHMBT_FLOAT32").ToLocalChecked(), Nan::New<Number>(SHMBT_FLOAT32));
-		target->Set(Nan::New("SHMBT_FLOAT64").ToLocalChecked(), Nan::New<Number>(SHMBT_FLOAT64));
+		Nan::Set(target, Nan::New("SHMBT_BUFFER").ToLocalChecked(), Nan::New<Number>(SHMBT_BUFFER));
+		Nan::Set(target, Nan::New("SHMBT_INT8").ToLocalChecked(), Nan::New<Number>(SHMBT_INT8));
+		Nan::Set(target, Nan::New("SHMBT_UINT8").ToLocalChecked(), Nan::New<Number>(SHMBT_UINT8));
+		Nan::Set(target, Nan::New("SHMBT_UINT8CLAMPED").ToLocalChecked(), Nan::New<Number>(SHMBT_UINT8CLAMPED));
+		Nan::Set(target, Nan::New("SHMBT_INT16").ToLocalChecked(), Nan::New<Number>(SHMBT_INT16));
+		Nan::Set(target, Nan::New("SHMBT_UINT16").ToLocalChecked(), Nan::New<Number>(SHMBT_UINT16));
+		Nan::Set(target, Nan::New("SHMBT_INT32").ToLocalChecked(), Nan::New<Number>(SHMBT_INT32));
+		Nan::Set(target, Nan::New("SHMBT_UINT32").ToLocalChecked(), Nan::New<Number>(SHMBT_UINT32));
+		Nan::Set(target, Nan::New("SHMBT_FLOAT32").ToLocalChecked(), Nan::New<Number>(SHMBT_FLOAT32));
+		Nan::Set(target, Nan::New("SHMBT_FLOAT64").ToLocalChecked(), Nan::New<Number>(SHMBT_FLOAT64));
 
 		node::AtExit(AtNodeExit);
 	}
