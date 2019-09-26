@@ -1,5 +1,5 @@
-IPC shared memory for NodeJs. Use as Buffer or TypedArray.<br>
-<a href='https://www.npmjs.com/package/shm-typed-array'><img src='https://img.shields.io/npm/v/shm-typed-array.svg' /> <img src='https://travis-ci.org/ukrbublik/shm-typed-array.svg?branch=master' /></a>
+IPC shared memory for NodeJs. Use as Buffer or TypedArray.  
+![npm](https://img.shields.io/npm/v/shm-typed-array.svg) ![travis](https://travis-ci.org/ukrbublik/shm-typed-array.svg?branch=master)
 
 
 # Install
@@ -17,25 +17,29 @@ Tested on Ubuntu 16, Node v6.9.1
 
 # API
 
-<h4>shm.create (count, typeKey [, key])</h4>
-Create shared memory segment.<br>
-count - number of elements (not bytes), typeKey - type of elements ('Buffer' by default, see list below), key - optional integer to create shm with specific key.<br>
-Returns shared memory Buffer or descendant of TypedArray object, class depends on param "typeKey". Or returns null if shm can't be created.<br>
-Returned object has property 'key' - integer key of created shared memory segment, to use in shm.get().
+## shm.create (count, typeKey [, key])
+Create shared memory segment.  
+`count` - number of elements (not bytes), 
+`typeKey` - type of elements (`'Buffer'` by default, see list below), 
+`key` - optional integer to create shm with specific key.  
+Returns shared memory `Buffer` or descendant of `TypedArray` object, class depends on param `typeKey`.  
+Or returns `null` if shm can't be created.  
+Returned object has property `key` - integer key of created shared memory segment, to use in `shm.get()`.
 
-<h4>shm.get (key, typeKey)</h4>
-Get created shared memory segment. Returns null if shm can't be opened.
+## shm.get (key, typeKey)
+Get created shared memory segment. 
+Returns `null` if shm can't be opened.
 
-<h4>shm.detach (key)</h4>
-Detach shared memory segment.<br>
+## shm.detach (key)
+Detach shared memory segment.  
 If there are no other attaches for this segment, it will be destroyed.
 
-<h4>shm.detachAll ()</h4>
-Detach all shared memory segments.<br>
-Will be automatically called on process exit/termination.
+## shm.detachAll ()
+Detach all created shared memory segments.  
+Will be automatically called on process exit, see [Cleanup](#cleanup).
 
-<h4>Types:</h4>
-<pre>
+### Types:
+```js
 shm.BufferType = {
 	'Buffer': shm.SHMBT_BUFFER,
 	'Int8Array': shm.SHMBT_INT8,
@@ -48,14 +52,21 @@ shm.BufferType = {
 	'Float32Array': shm.SHMBT_FLOAT32,
 	'Float64Array': shm.SHMBT_FLOAT64,
 };
-</pre>
+```
 
-<h4>shm.getTotalSize()</h4>
+## shm.getTotalSize()
 Get total size of all shared segments in bytes.
 
-<h4>shm.LengthMax</h4>
-Max length of shared memory segment (count of elements, not bytes)<br>
+## shm.LengthMax
+Max length of shared memory segment (count of elements, not bytes)  
 2^31 for 64bit, 2^30 for 32bit
+
+# Cleanup
+This library does cleanup of created SHM segments only on normal exit of process, see [`exit` event](https://nodejs.org/api/process.html#process_event_exit).  
+If you want to do cleanup on terminate signals like `SIGINT`, `SIGTERM`, please use [node-cleanup](https://github.com/jtlapp/node-cleanup) / [node-death](https://github.com/jprichardson/node-death) and add code to exit handlers:
+```js
+shm.detachAll();
+```
 
 # Usage
 See example.js
@@ -122,8 +133,9 @@ function groupSuicide() {
 	}
 }
 ```
-<b>Output:</b>
-<pre>
+
+**Output:**
+```
 [Master] Typeof buf: Buffer Typeof arr: Float32Array
 [Worker] Typeof buf: Buffer Typeof arr: Float32Array
 0 [Master] Set buf[0]= 2  arr[0]= 5
@@ -136,4 +148,4 @@ function groupSuicide() {
 3 [Worker] Get buf[0]= 5  arr[0]= null
 4 [Master] Set buf[0]= 6  arr[0]= 0.3125
 shm segments destroyed: 2
-</pre>
+```
