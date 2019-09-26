@@ -1,4 +1,5 @@
-IPC shared memory for NodeJs. Use as Buffer or TypedArray.  
+IPC shared memory for Node.js  
+Use as `Buffer` or `TypedArray`  
 ![npm](https://img.shields.io/npm/v/shm-typed-array.svg) ![travis](https://travis-ci.org/ukrbublik/shm-typed-array.svg?branch=master)
 
 
@@ -13,11 +14,12 @@ node-gyp configure
 node-gyp build
 node test/example.js
 ```
-Tested on Ubuntu 16, Node v6.9.1
+Windows is not supported.
+
 
 # API
 
-## shm.create (count, typeKey [, key])
+### shm.create (count, typeKey [, key])
 Create shared memory segment.  
 `count` - number of elements (not bytes), 
 `typeKey` - type of elements (`'Buffer'` by default, see list below), 
@@ -26,19 +28,19 @@ Returns shared memory `Buffer` or descendant of `TypedArray` object, class depen
 Or returns `null` if shm can't be created.  
 Returned object has property `key` - integer key of created shared memory segment, to use in `shm.get()`.
 
-## shm.get (key, typeKey)
+### shm.get (key, typeKey)
 Get created shared memory segment. 
 Returns `null` if shm can't be opened.
 
-## shm.detach (key)
+### shm.detach (key)
 Detach shared memory segment.  
 If there are no other attaches for this segment, it will be destroyed.
 
-## shm.detachAll ()
+### shm.detachAll ()
 Detach all created shared memory segments.  
 Will be automatically called on process exit, see [Cleanup](#cleanup).
 
-### Types:
+#### Types:
 ```js
 shm.BufferType = {
 	'Buffer': shm.SHMBT_BUFFER,
@@ -54,12 +56,13 @@ shm.BufferType = {
 };
 ```
 
-## shm.getTotalSize()
+### shm.getTotalSize()
 Get total size of all shared segments in bytes.
 
-## shm.LengthMax
+### shm.LengthMax
 Max length of shared memory segment (count of elements, not bytes)  
 2^31 for 64bit, 2^30 for 32bit
+
 
 # Cleanup
 This library does cleanup of created SHM segments only on normal exit of process, see [`exit` event](https://nodejs.org/api/process.html#process_event_exit).  
@@ -68,8 +71,9 @@ If you want to do cleanup on terminate signals like `SIGINT`, `SIGTERM`, please 
 shm.detachAll();
 ```
 
+
 # Usage
-See example.js
+See [example.js](https://github.com/ukrbublik/shm-typed-array/blob/master/test/example.js)
 
 ``` js
 const cluster = require('cluster');
