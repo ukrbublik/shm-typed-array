@@ -1,6 +1,5 @@
 'use strict';
 const shm = require('./build/Release/shm.node');
-const nodeCleanup = require('node-cleanup');
 const cluster = require('cluster');
 
 const uint32Max = Math.pow(2,32) - 1;
@@ -21,7 +20,6 @@ const cleanup = function () {
 	} catch(exc) { console.error(exc); }
 };
 process.on('exit', cleanup);
-nodeCleanup(cleanup);
 
 /**
  * Types of shared memory object
