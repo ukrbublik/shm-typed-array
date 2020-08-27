@@ -1,5 +1,5 @@
 {
-  "name": "shm-typed-array",
+  "name": "@ukrbublik/shm-typed-array",
   "version": "0.0.12",
   "description": "IPC shared memory for NodeJs. Use as Buffer or TypedArray.",
   "main": "index.js",
@@ -8,6 +8,7 @@
     "type": "git",
     "url": "https://github.com/ukrbublik/shm-typed-array.git"
   },
+  "publishConfig": { "registry": "https://npm.pkg.github.com/" },
   "keywords": [
     "ipc",
     "shm",
