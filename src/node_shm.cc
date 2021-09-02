@@ -1,4 +1,5 @@
 #include "node_shm.h"
+#include "node.h"
 
 //-------------------------------
 
@@ -28,8 +29,8 @@ namespace Buffer {
 
 
 	MaybeLocal<Object> NewTyped(
-		Isolate* isolate, 
-		char* data, 
+		Isolate* isolate,
+		char* data,
 		size_t count
 	#if NODE_MODULE_VERSION > IOJS_2_0_MODULE_VERSION
 	    , node::Buffer::FreeCallback callback
@@ -51,9 +52,9 @@ namespace Buffer {
 		Local<ArrayBuffer> ab = arr->Buffer();
 		*/
 
-		Local<ArrayBuffer> ab = ArrayBuffer::New(isolate, data, length, 
+		Local<ArrayBuffer> ab = ArrayBuffer::New(isolate, data, length,
 			ArrayBufferCreationMode::kExternalized);
-		
+
 		Local<Object> ui;
 		switch(type) {
 			case SHMBT_INT8:
@@ -159,7 +160,11 @@ namespace node_shm {
 	static bool hasShmSegmentInfo(int resId);
 	static bool removeShmSegmentInfo(int resId);
 	static void FreeCallback(char* data, void* hint);
+  #if NODE_MODULE_VERSION < NODE_16_0_MODULE_VERSION
 	static void Init(Local<Object> target);
+  #else
+	static void Init(Local<Object> target, Local<Value> module, void* priv);
+  #endif
 	static void AtNodeExit(void*);
 
 
@@ -231,10 +236,10 @@ namespace node_shm {
 		if (i == shmSegmentsCnt-1) {
 			//removing last element
 		} else {
-			std::copy(shmSegmentsIds + i + 1, 
-				shmSegmentsIds + shmSegmentsCnt, 
+			std::copy(shmSegmentsIds + i + 1,
+				shmSegmentsIds + shmSegmentsCnt,
 				shmSegmentsIds + i);
-			std::copy(shmSegmentsAddrs + i + 1, 
+			std::copy(shmSegmentsAddrs + i + 1,
 				shmSegmentsAddrs + shmSegmentsCnt,
 				shmSegmentsAddrs + i);
 		}
@@ -307,7 +312,7 @@ namespace node_shm {
 		ShmBufferType type = (ShmBufferType) Nan::To<int32_t>(info[4]).FromJust();
 		size_t size = count * getSize1ForShmBufferType(type);
 		bool isCreate = (size > 0);
-		
+
 		int resId = shmget(key, size, shmflg);
 		if (resId == -1) {
 			switch(errno) {
@@ -330,7 +335,7 @@ namespace node_shm {
 				} else
 					return Nan::ThrowError(strerror(errno));
 			}
-			
+
 			void* res = shmat(resId, NULL, at_shmflg);
 			if (res == (void *)-1)
 				return Nan::ThrowError(strerror(errno));
@@ -399,9 +404,13 @@ namespace node_shm {
 	}
 
 	// Init module
+  #if NODE_MODULE_VERSION < NODE_16_0_MODULE_VERSION
 	static void Init(Local<Object> target) {
+  #else
+	static void Init(Local<Object> target, Local<Value> module, void* priv) {
+  #endif
 		initShmSegmentsInfo();
-		
+
 		Nan::SetMethod(target, "get", get);
 		Nan::SetMethod(target, "detach", detach);
 		Nan::SetMethod(target, "detachAll", detachAll);
@@ -424,7 +433,11 @@ namespace node_shm {
 		Nan::Set(target, Nan::New("SHMBT_FLOAT32").ToLocalChecked(), Nan::New<Number>(SHMBT_FLOAT32));
 		Nan::Set(target, Nan::New("SHMBT_FLOAT64").ToLocalChecked(), Nan::New<Number>(SHMBT_FLOAT64));
 
+		#if NODE_MODULE_VERSION < NODE_16_0_MODULE_VERSION
 		node::AtExit(AtNodeExit);
+		#else
+		node::AddEnvironmentCleanupHook(target->GetIsolate(), AtNodeExit, nullptr);
+		#endif
 	}
 
 }
