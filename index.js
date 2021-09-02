@@ -1,6 +1,5 @@
 'use strict';
 const shm = require('./build/Release/shm.node');
-const cluster = require('cluster');
 
 const uint32Max = Math.pow(2,32) - 1;
 const keyMin = 1;
