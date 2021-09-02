@@ -6,13 +6,6 @@ Use as `Buffer` or `TypedArray`
 # Install
 ``` bash
 $ npm install shm-typed-array
-$ npm test
-```
-Manual build:
-``` bash
-node-gyp configure
-node-gyp build
-node test/example.js
 ```
 Windows is not supported.
 
