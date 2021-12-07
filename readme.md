@@ -12,11 +12,12 @@ Windows is not supported.
 
 # API
 
-### shm.create (count, typeKey [, key])
+### shm.create (count, typeKey [, key] [, perm])
 Create shared memory segment.  
 `count` - number of elements (not bytes), 
 `typeKey` - type of elements (`'Buffer'` by default, see list below), 
-`key` - optional integer to create shm with specific key.  
+`key` - optional integer to create shm with specific key, 
+`perm` - optional permissions flag (default is `660`). 
 Returns shared memory `Buffer` or descendant of `TypedArray` object, class depends on param `typeKey`.  
 Or returns `null` if shm can't be created.  
 Returned object has property `key` - integer key of created shared memory segment, to use in `shm.get()`.
@@ -25,9 +26,9 @@ Returned object has property `key` - integer key of created shared memory segmen
 Get created shared memory segment. 
 Returns `null` if shm can't be opened.
 
-### shm.detach (key)
+### shm.detach (key [, forceDestroy])
 Detach shared memory segment.  
-If there are no other attaches for this segment, it will be destroyed.
+If there are no other attaches for this segment (or `forceDestroy` is true), it will be destroyed.
 
 ### shm.detachAll ()
 Detach all created shared memory segments.  
@@ -70,7 +71,7 @@ See [example.js](https://github.com/ukrbublik/shm-typed-array/blob/master/test/e
 
 ``` js
 const cluster = require('cluster');
-const shm = require('./index.js');
+const shm = require('shm-typed-array');
 
 var buf, arr;
 if (cluster.isMaster) {

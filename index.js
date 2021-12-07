@@ -4,7 +4,6 @@ const shm = require('./build/Release/shm.node');
 const uint32Max = Math.pow(2,32) - 1;
 const keyMin = 1;
 const keyMax = uint32Max - keyMin;
-const perm = Number.parseInt('660', 8);
 const lengthMin = 1;
 /**
  * Max length of shared memory segment (count of elements, not bytes)
@@ -53,11 +52,12 @@ const BufferTypeSizeof = {
  * @param {int} count - number of elements
  * @param {string} typeKey - see keys of BufferType
  * @param {int/null} key - integer key of shared memory segment, or null to autogenerate
+ * @param {string} permStr - permissions, default is 660
  * @return {mixed/null} shared memory buffer/array object, or null on error
  *  Class depends on param typeKey: Buffer or descendant of TypedArray
  *  Return object has property 'key' - integer key of created shared memory segment
  */
-function create(count, typeKey /*= 'Buffer'*/, key /*= null*/) {
+function create(count, typeKey /*= 'Buffer'*/, key /*= null*/, permStr /*= '660'*/) {
 	if (typeKey === undefined)
 		typeKey = 'Buffer';
 	if (key === undefined)
@@ -68,6 +68,10 @@ function create(count, typeKey /*= 'Buffer'*/, key /*= null*/) {
 		if (!(Number.isSafeInteger(key) && key >= keyMin && key <= keyMax))
 			throw new RangeError('Shm key should be ' + keyMin + ' .. ' + keyMax);
 	}
+	if (permStr === undefined || isNaN( Number.parseInt(permStr, 8)))
+	  permStr = '660';
+	const perm = Number.parseInt(permStr, 8);
+
 	var type = BufferType[typeKey];
 	//var size1 = BufferTypeSizeof[typeKey];
 	//var size = size1 * count;
