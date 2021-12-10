@@ -20,7 +20,7 @@ type ShmMap = {
 * Create shared memory segment.
 * Returns null if shm can't be created.
 */
-export function create<K extends keyof ShmMap = 'Buffer'>(count: number, typeKey?: K, key?: number): ShmMap[K] | null;
+export function create<K extends keyof ShmMap = 'Buffer'>(count: number, typeKey?: K, key?: number, perm?: string): ShmMap[K] | null;
 
 /**
  * Get shared memory segment.
