@@ -52,8 +52,13 @@ namespace Buffer {
 		Local<ArrayBuffer> ab = arr->Buffer();
 		*/
 
+		#if NODE_MODULE_VERSION > NODE_16_0_MODULE_VERSION
+		Local<ArrayBuffer> ab = ArrayBuffer::New(isolate,
+			ArrayBuffer::NewBackingStore(data, length, [](void*, size_t, void*){}, nullptr));
+		#else
 		Local<ArrayBuffer> ab = ArrayBuffer::New(isolate, data, length,
 			ArrayBufferCreationMode::kExternalized);
+		#endif
 
 		Local<Object> ui;
 		switch(type) {
