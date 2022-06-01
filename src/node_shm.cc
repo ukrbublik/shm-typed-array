@@ -3,6 +3,12 @@
 
 //-------------------------------
 
+#if NODE_MODULE_VERSION > NODE_16_0_MODULE_VERSION
+namespace {
+void emptyBackingStoreDeleter(void*, size_t, void*) {}
+}
+#endif
+
 namespace node {
 namespace Buffer {
 
@@ -54,7 +60,7 @@ namespace Buffer {
 
 		#if NODE_MODULE_VERSION > NODE_16_0_MODULE_VERSION
 		Local<ArrayBuffer> ab = ArrayBuffer::New(isolate,
-			ArrayBuffer::NewBackingStore(data, length, [](void*, size_t, void*){}, nullptr));
+			ArrayBuffer::NewBackingStore(data, length, &emptyBackingStoreDeleter, nullptr));
 		#else
 		Local<ArrayBuffer> ab = ArrayBuffer::New(isolate, data, length,
 			ArrayBufferCreationMode::kExternalized);
