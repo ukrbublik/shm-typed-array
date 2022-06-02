@@ -1,6 +1,9 @@
 language: node_js
 node_js:
   - "4.0"
+  - 14
+  - 16
+  - 18
 before_install:
 install:
   - npm install
