@@ -1,5 +1,6 @@
 dist: focal
 language: node_js
+python: "3.6"
 node_js:
   - "4.0"
   - 14
@@ -14,11 +15,9 @@ addons:
     sources:
     - ubuntu-toolchain-r-test
     - george-edison55-precise-backports # cmake
-    - deadsnakes # python
     packages:
     - gcc-4.8
     - g++-4.8
     - clang
     - cmake
     - cmake-data
-    - python3.6
