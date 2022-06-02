@@ -1,4 +1,3 @@
-dist: focal
 language: node_js
 python: "3.6"
 node_js:
