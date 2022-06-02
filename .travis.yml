@@ -1,21 +1,19 @@
+dist: focal
 language: node_js
 node_js:
-  - "4.0"
-before_install:
+  - 14
+  - 17
 install:
   - npm install
   - npm test
-env:
-  - CXX=g++-4.8
 addons:
   apt:
     sources:
     - ubuntu-toolchain-r-test
     - george-edison55-precise-backports # cmake
     packages:
-    - gcc-4.8
-    - g++-4.8
+    - gcc
+    - g++
     - clang
     - cmake
     - cmake-data
-
