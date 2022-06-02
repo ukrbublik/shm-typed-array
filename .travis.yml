@@ -1,4 +1,7 @@
 language: node_js
+python:
+  - "2.7"
+  - "3.8"
 node_js:
   - "4.0"
   - 14
