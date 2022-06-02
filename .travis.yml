@@ -2,11 +2,8 @@ language: node_js
 node_js:
   - "4.0"
   - 14
-  - 16
   - 18
 before_install:
-  - sudo apt-get update
-  - sudo apt-get install python3
 install:
   - npm install
   - npm test
@@ -23,4 +20,5 @@ addons:
     - clang
     - cmake
     - cmake-data
+    - python3
 
