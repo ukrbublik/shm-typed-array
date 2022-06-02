@@ -6,6 +6,8 @@ node_js:
 python:
   - "3.6"
 before_install:
+  - "pyenv global 3.6"
+  - "pip install pip --upgrade"
 install:
   - npm install
   - npm test
