@@ -8,8 +8,7 @@ install:
   - npm install
   - npm test
 env:
-  - CXX=g++-4.8
-  - PYTHON=3.6
+  - CXX=g++-4.8 PYTHON=3.6
 addons:
   apt:
     sources:
