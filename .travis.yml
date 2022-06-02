@@ -3,6 +3,8 @@ node_js:
   - "4.0"
   - 14
   - 17
+python:
+  - "3.6"
 before_install:
 install:
   - npm install
@@ -20,5 +22,3 @@ addons:
     - clang
     - cmake
     - cmake-data
-    - python3
-
