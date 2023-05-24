@@ -93,6 +93,35 @@ function create(count, typeKey /*= 'Buffer'*/, key /*= null*/, permStr /*= '660'
 }
 
 /**
+ * Create POSIX shared memory object
+ * @param {string} name - string name of shared memory object, should start with '/'
+ *  Eg. '/test' will create virtual file '/dev/shm/test' in tmpfs for Linix
+ * @param {int} count - number of elements
+ * @param {string} typeKey - see keys of BufferType
+ * @param {string} permStr - permissions, default is 660
+ * @return {mixed/null} shared memory buffer/array object, or null on error
+ *  Class depends on param typeKey: Buffer or descendant of TypedArray
+ */
+function createPosix(name, count, typeKey /*= 'Buffer'*/, permStr /*= '660'*/) {
+	if (typeKey === undefined)
+		typeKey = 'Buffer';
+	if (BufferType[typeKey] === undefined)
+		throw new Error("Unknown type key " + typeKey);
+	if (permStr === undefined || isNaN( Number.parseInt(permStr, 8)))
+	  permStr = '660';
+	const perm = Number.parseInt(permStr, 8);
+
+	const type = BufferType[typeKey];
+	//var size1 = BufferTypeSizeof[typeKey];
+	//var size = size1 * count;
+	const oflag = shm.O_CREAT | shm.O_RDWR | shm.O_EXCL;
+	const mmap_flags = shm.MAP_SHARED;
+	const res = shm.getPosix(name, count, oflag, perm, mmap_flags, type);
+
+	return res;
+}
+
+/**
  * Get shared memory segment
  * @param {int} key - integer key of shared memory segment
  * @param {string} typeKey - see keys of BufferType
@@ -114,6 +143,24 @@ function get(key, typeKey /*= 'Buffer'*/) {
 }
 
 /**
+ * Get POSIX shared memory object
+ * @param {string} name - string name of shared memory object
+ * @param {string} typeKey - see keys of BufferType
+ * @return {mixed/null} shared memory buffer/array object, see createPosix(), or null on error
+ */
+function getPosix(name, typeKey /*= 'Buffer'*/) {
+	if (typeKey === undefined)
+		typeKey = 'Buffer';
+	if (BufferType[typeKey] === undefined)
+		throw new Error("Unknown type key " + typeKey);
+	var type = BufferType[typeKey];
+	const oflag = shm.O_RDWR;
+	const mmap_flags = shm.MAP_SHARED;
+	let res = shm.getPosix(name, 0, oflag, 0, mmap_flags, type);
+	return res;
+}
+
+/**
  * Detach shared memory segment
  * If there are no other attaches for this segment, it will be destroyed
  * @param {int} key - integer key of shared memory segment
@@ -124,6 +171,18 @@ function detach(key, forceDestroy /*= false*/) {
 	if (forceDestroy === undefined)
 		forceDestroy = false;
 	return shm.detach(key, forceDestroy);
+}
+
+/**
+ * Detach POSIX shared memory object
+ * @param {string} name - string name of shared memory object
+ * @param {bool} forceDestroy - true to unlink
+ * @return {int} 0 on detach, 1 on destroy, -1 on error
+ */
+function detachPosix(name, forceDestroy /*= false*/) {
+	if (forceDestroy === undefined)
+		forceDestroy = false;
+	return shm.detachPosix(name, forceDestroy);
 }
 
 /**
@@ -141,8 +200,11 @@ function _keyGen() {
 
 //Exports
 module.exports.create = create;
+module.exports.createPosix = createPosix;
 module.exports.get = get;
+module.exports.getPosix = getPosix;
 module.exports.detach = detach;
+module.exports.detachPosix = detachPosix;
 module.exports.detachAll = detachAll;
 module.exports.getTotalSize = shm.getTotalSize;
 module.exports.BufferType = BufferType;

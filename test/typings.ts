@@ -25,3 +25,12 @@ shm.detach(123, true) as number;
 shm.detachAll() as number;
 shm.getTotalSize() as number;
 shm.LengthMax as number;
+
+// typings:expect-error
+let fail5: Buffer = shm.createPosix();
+let fail6: Buffer = shm.createPosix('/test');
+let pass5: shm.Shm<Buffer> | null = shm.createPosix('/test', 1);
+
+// typings:expect-error
+let fail7: Buffer = shm.getPosix();
+let pass6: shm.Shm<Buffer> | null = shm.getPosix('/test');

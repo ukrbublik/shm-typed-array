@@ -1,7 +1,7 @@
 
 /// <reference types="node" />
 
-type Shm<T> = (T & { key: number });
+type Shm<T> = (T & { key?: number });
 
 type ShmMap = {
     Buffer: Shm<Buffer>;
@@ -23,16 +23,34 @@ type ShmMap = {
 export function create<K extends keyof ShmMap = 'Buffer'>(count: number, typeKey?: K, key?: number, perm?: string): ShmMap[K] | null;
 
 /**
+* Create POSIX shared memory object.
+* Returns null if shm can't be created.
+*/
+export function createPosix<K extends keyof ShmMap = 'Buffer'>(name: string, count: number, typeKey?: K, perm?: string): ShmMap[K] | null;
+
+/**
  * Get shared memory segment.
  * Returns null if shm can't be opened.
  */
 export function get<K extends keyof ShmMap = 'Buffer'>(key: number, typeKey?: K): ShmMap[K] | null;
 
 /**
+ * Get POSIX shared memory object.
+ * Returns null if shm can't be opened.
+ */
+export function getPosix<K extends keyof ShmMap = 'Buffer'>(name: string, typeKey?: K): ShmMap[K] | null;
+
+/**
  * Detach shared memory segment.
  * If there are no other attaches for this segment, it will be destroyed.
  */
 export function detach(key: number, forceDestoy?: boolean): number;
+
+/**
+ * Detach POSIX shared memory object.
+ * If forceDestoy is true, it will be unlinked.
+ */
+export function detachPosix(name: string, forceDestoy?: boolean): number;
 
 /**
  * Detach all created and getted shared memory segments.

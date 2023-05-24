@@ -7,6 +7,13 @@
 #include <sys/ipc.h>
 #include <sys/types.h>
 #include <sys/shm.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+#include <algorithm>
+#include <array>
 
 using namespace node;
 using namespace v8;
@@ -111,7 +118,7 @@ namespace node {
 namespace node_shm {
 
 	/**
-	 * Create or get shared memory
+	 * Create or get shared memory segment
 	 * Params:
 	 *  key_t key
 	 *  size_t count - count of elements, not bytes
@@ -123,6 +130,19 @@ namespace node_shm {
 	NAN_METHOD(get);
 
 	/**
+	 * Create or get POSIX shared memory object
+	 * Params:
+	 *  String name
+	 *  size_t count - count of elements, not bytes
+	 *  int oflag - flag for shm_open()
+	 *  mode_t mode - mode for shm_open()
+	 *  int mmap_flags - flags for mmap()
+	 *  enum ShmBufferType type
+	 * Returns buffer or typed array, depends on input param type
+	 */
+	NAN_METHOD(getPosix);
+
+	/**
 	 * Destroy shared memory segment
 	 * Params:
 	 *  key_t key
@@ -130,6 +150,15 @@ namespace node_shm {
 	 * Returns count of left attaches or -1 on error
 	 */
 	NAN_METHOD(detach);
+
+	/**
+	 * Destroy shared memory segment
+	 * Params:
+	 *  key_t key
+	 *  bool force - true to destroy even there are other processed uses this segment
+	 * Returns count of left attaches or -1 on error
+	 */
+	NAN_METHOD(detachPosix);
 
 	/**
 	 * Detach all created and getted shared memory segments
@@ -144,11 +173,10 @@ namespace node_shm {
 
 	/**
 	 * Constants to be exported:
-	 * IPC_PRIVATE
-	 * IPC_CREAT
-	 * IPC_EXCL
+	 * IPC_PRIVATE, IPC_CREAT, IPC_EXCL
 	 * SHM_RDONLY
 	 * NODE_BUFFER_MAX_LENGTH (count of elements, not bytes)
+	 * O_CREAT, O_RDWR, O_RDONLY, O_EXCL, O_TRUNC
 	 * enum ShmBufferType: 
 	 *  SHMBT_BUFFER, SHMBT_INT8, SHMBT_UINT8, SHMBT_UINT8CLAMPED, 
 	 *  SHMBT_INT16, SHMBT_UINT16, SHMBT_INT32, SHMBT_UINT32, 
