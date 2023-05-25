@@ -9,8 +9,12 @@
 			"src/node_shm.h",
 			"src/node_shm.cc"
 		],
-		"libraries": [
-			"-lrt"
-		]
+		"conditions": [
+			["OS!='mac'", {
+				"libraries": [
+					"-lrt"
+				]
+			}]
+		],
 	}]
 }
