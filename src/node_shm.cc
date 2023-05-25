@@ -168,8 +168,6 @@ namespace node_shm {
 		int id;
 		void* memAddr;
 		size_t memSize;
-		size_t bufCount;
-		ShmBufferType bufType;
 		std::string name;
 	};
 
@@ -178,15 +176,16 @@ namespace node_shm {
 	// Array to keep info about created segments, call it "meta array"
 	std::vector<ShmMeta> shmMeta;
 	size_t shmAllocatedBytes = 0;
+	size_t shmMappedBytes = 0;
 
 	// Declare private methods
 	static int detachAllShm();
 	static int detachShmSegmentOrObject(ShmMeta& meta, bool force = false, bool onExit = false);
 	static int detachShmSegment(ShmMeta& meta, bool force = false, bool onExit = false);
 	static int detachPosixShmObject(ShmMeta& meta, bool force = false, bool onExit = false);
-	static void initShmSegmentsInfo();
 	static size_t addShmSegmentInfo(ShmMeta& meta);
-	static bool removeShmSegmentInfo(ShmMeta& meta);
+	static bool removeShmSegmentInfo(size_t ind);
+
 	static void FreeCallback(char* data, void* hint);
   #if NODE_MODULE_VERSION < NODE_16_0_MODULE_VERSION
 	static void Init(Local<Object> target);
@@ -196,12 +195,7 @@ namespace node_shm {
 	static void AtNodeExit(void*);
 
 
-	// Init meta arrays
-	static void initShmSegmentsInfo() {
-		detachAllShm();
-	}
-
-	// Detach all segments and delete meta arrays
+	// Detach all segments (don't force destroy) and clear meta array
 	// Returns count of destroyed segments
 	static int detachAllShm() {
 		int res = 0;
@@ -215,13 +209,14 @@ namespace node_shm {
 		return res;
 	}
 
-	// Add segment to meta arrays
+	// Add meta to array
 	static size_t addShmSegmentInfo(ShmMeta& meta) {
 		shmMeta.push_back(meta);
 		size_t ind = shmMeta.size() - 1;
 		return ind;
 	}
 
+	// Find in mera array
   static size_t findShmSegmentInfo(ShmMeta& search) {
 		const auto found = std::find_if(shmMeta.begin(), shmMeta.end(),
       [&](const auto& el) {
@@ -234,18 +229,16 @@ namespace node_shm {
 		return ind;
   }
 
-	// Remove segment from meta arrays
-	static bool removeShmSegmentInfo(ShmMeta& meta) {
-		size_t foundInd = findShmSegmentInfo(meta);
-		if (foundInd == NOT_FOUND_IND)
-			return false; //not found
-		//shmMeta.erase(shmMeta.begin() + foundInd);
-		//todo
-		return true;
+	// Remove from meta array
+	static bool removeShmSegmentInfo(size_t ind) {
+		// TODO:
+		// Remove meta data from vector with .erase()
+		// But this requires to have key pairs `meta id` <-> `index in vector`
+		// And pass `meta id` to `hint` in `NewTypedBuffer()` (for `FreeCallback`)
 	}
 
 	// Detach segment or POSIX object
-	// Returns 0 if deleted, > 0 if detached, -1 on error
+	// Returns 0 if destroyed, > 0 if detached, -1 on error
 	static int detachShmSegmentOrObject(ShmMeta& meta, bool force, bool onExit) {
 		if (meta.type == SHM_TYPE_SYSTEMV) {
 			return detachShmSegment(meta, force, onExit);
@@ -264,6 +257,9 @@ namespace node_shm {
 		err = meta.memAddr != NULL ? shmdt(meta.memAddr) : 0;
 		if (err == 0) {
 			meta.memAddr = NULL;
+			if (meta.memAddr != NULL) {
+				shmMappedBytes -= meta.memSize;
+			}
 			if (meta.id == 0) {
 				// meta is obsolete, should be deleted from meta array
 				return 0;
@@ -311,6 +307,9 @@ namespace node_shm {
 		err = meta.memAddr != NULL ? munmap(meta.memAddr, meta.memSize) : 0;
 		if (err == 0) {
 			meta.memAddr = NULL;
+			if (meta.memAddr != NULL) {
+				shmMappedBytes -= meta.memSize;
+			}
 			if (meta.name.empty()) {
 				// meta is obsolete, should be deleted from meta array
 				return 0;
@@ -354,7 +353,7 @@ namespace node_shm {
 		//assert(meta->memAddr == addr);
 
     detachShmSegmentOrObject(meta, false, true);
-		removeShmSegmentInfo(meta);
+		removeShmSegmentInfo(metaInd);
 	}
 
 	NAN_METHOD(get) {
@@ -397,12 +396,16 @@ namespace node_shm {
 				return Nan::ThrowError(strerror(errno));
 
 			ShmMeta meta = {
-				.type=SHM_TYPE_SYSTEMV, .id=shmid, .memAddr=res, .memSize=size, .bufCount=count, .bufType=type, .name=""
+				.type=SHM_TYPE_SYSTEMV, .id=shmid, .memAddr=res, .memSize=size, .name=""
 			};
 			size_t metaInd = findShmSegmentInfo(meta);
 			if (metaInd == NOT_FOUND_IND) {
 				metaInd = addShmSegmentInfo(meta);
+			}
+			if (isCreate) {
 				shmAllocatedBytes += size;
+			} else {
+				shmMappedBytes += size;
 			}
 
 			info.GetReturnValue().Set(Nan::NewTypedBuffer(
@@ -499,12 +502,16 @@ namespace node_shm {
 
 		// Write meta
 		ShmMeta meta = {
-			.type=SHM_TYPE_POSIX, .id=0, .memAddr=res, .memSize=realSize, .bufCount=count, .bufType=type, .name=name
+			.type=SHM_TYPE_POSIX, .id=0, .memAddr=res, .memSize=realSize, .name=name
 		};
 		size_t metaInd = findShmSegmentInfo(meta);
 		if (metaInd == NOT_FOUND_IND) {
 			metaInd = addShmSegmentInfo(meta);
+		}
+		if (isCreate) {
 			shmAllocatedBytes += realSize;
+		} else {
+			shmMappedBytes += realSize;
 		}
 
 		// Don't save to meta
@@ -538,13 +545,13 @@ namespace node_shm {
 			}
 		} else {
 			ShmMeta meta = {
-				.type=SHM_TYPE_SYSTEMV, .id=shmid, .memAddr=NULL, .memSize=0, .bufCount=0, .bufType=SHMBT_BUFFER, .name=""
+				.type=SHM_TYPE_SYSTEMV, .id=shmid, .memAddr=NULL, .memSize=0, .name=""
 			};
 		  size_t foundInd = findShmSegmentInfo(meta);
 			if (foundInd != NOT_FOUND_IND) {
 				int res = detachShmSegment(shmMeta[foundInd], forceDestroy);
 				if (res != -1)
-					removeShmSegmentInfo(shmMeta[foundInd]);
+					removeShmSegmentInfo(foundInd);
 				info.GetReturnValue().Set(Nan::New<Number>(res));
 			} else {
 				//not found in meta array, means not created by us
@@ -566,13 +573,13 @@ namespace node_shm {
 		bool forceDestroy = Nan::To<bool>(info[1]).FromJust();
 
 		ShmMeta meta = {
-			.type=SHM_TYPE_POSIX, .id=0, .memAddr=NULL, .memSize=0, .bufCount=0, .bufType=SHMBT_BUFFER, .name=name
+			.type=SHM_TYPE_POSIX, .id=0, .memAddr=NULL, .memSize=0, .name=name
 		};
 		size_t foundInd = findShmSegmentInfo(meta);
 		if (foundInd != NOT_FOUND_IND) {
 			int res = detachPosixShmObject(shmMeta[foundInd], forceDestroy);
 			if (res != -1)
-				removeShmSegmentInfo(shmMeta[foundInd]);
+				removeShmSegmentInfo(foundInd);
 			info.GetReturnValue().Set(Nan::New<Number>(res));
 		} else {
 			//not found in meta array, means not created by us
@@ -586,12 +593,15 @@ namespace node_shm {
 
 	NAN_METHOD(detachAll) {
 		int cnt = detachAllShm();
-		initShmSegmentsInfo();
 		info.GetReturnValue().Set(Nan::New<Number>(cnt));
 	}
 
 	NAN_METHOD(getTotalSize) {
 		info.GetReturnValue().Set(Nan::New<Number>(shmAllocatedBytes));
+	}
+
+	NAN_METHOD(getTotalUsedSize) {
+		info.GetReturnValue().Set(Nan::New<Number>(shmMappedBytes));
 	}
 
 	// node::AtExit
@@ -605,7 +615,8 @@ namespace node_shm {
   #else
 	static void Init(Local<Object> target, Local<Value> module, void* priv) {
   #endif
-		initShmSegmentsInfo();
+
+		detachAllShm();
 
 		Nan::SetMethod(target, "get", get);
 		Nan::SetMethod(target, "getPosix", getPosix);
@@ -613,6 +624,7 @@ namespace node_shm {
 		Nan::SetMethod(target, "detachPosix", detachPosix);
 		Nan::SetMethod(target, "detachAll", detachAll);
 		Nan::SetMethod(target, "getTotalSize", getTotalSize);
+		Nan::SetMethod(target, "getTotalUsedSize", getTotalUsedSize);
 
 		Nan::Set(target, Nan::New("IPC_PRIVATE").ToLocalChecked(), Nan::New<Number>(IPC_PRIVATE));
 		Nan::Set(target, Nan::New("IPC_CREAT").ToLocalChecked(), Nan::New<Number>(IPC_CREAT));

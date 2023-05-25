@@ -208,5 +208,6 @@ module.exports.detach = detach;
 module.exports.detachPosix = detachPosix;
 module.exports.detachAll = detachAll;
 module.exports.getTotalSize = shm.getTotalSize;
+module.exports.getTotalUsedSize = shm.getTotalUsedSize;
 module.exports.BufferType = BufferType;
 module.exports.LengthMax = lengthMax;
