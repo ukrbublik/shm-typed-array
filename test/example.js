@@ -2,44 +2,49 @@ const cluster = require('cluster');
 const shm = require('../index.js');
 const assert = require('assert');
 
+const key1 = 12345678;
+const unexistingKey = 1234567891;
+const posixKey = '/1234567';
 
-var buf, arr;
+let buf, arr;
 if (cluster.isMaster) {
+	cleanup();
+
 	// Assert that creating shm with same key twice will fail
-	var key = 1234567890;
-	var a = shm.create(10, 'Float32Array', key);
-	var b = shm.create(10, 'Float32Array', key);
+	const a = shm.create(10, 'Float32Array', key1); //SYSV
+	const b = shm.create(10, 'Float32Array', key1); //SYSV
 	assert(a instanceof Float32Array);
-	assert(a.key == key);
+	assert(a.key == key1);
 	assert(b === null);
+	let attachesCnt = shm.detach(a.key);
+	assert(attachesCnt === 0);
 
 	// Assert that getting shm by unexisting key will fail
-	var unexisting_key = 1234567891;
-	var c = shm.get(unexisting_key, 'Buffer');
+	const c = shm.get(unexistingKey, 'Buffer');
 	assert(c === null);
 
 	// Test using shm between 2 node processes
-	buf = shm.create(4096); //4KB
-	arr = shm.create(1000000, 'Float32Array'); //1M floats
+	buf = shm.create(4096); //4KB, SYSV
+	arr = shm.create(10000, 'Float32Array', posixKey); //1M floats, POSIX
+	assert(arr && typeof arr.key === 'undefined');
 	//bigarr = shm.create(1000*1000*1000*1.5, 'Float32Array'); //6Gb
-	assert.equal(arr.length, 1000000);
-	assert.equal(arr.byteLength, 4*1000000);
+	assert.equal(arr.length, 10000);
+	assert.equal(arr.byteLength, 4*10000);
 	buf[0] = 1;
 	arr[0] = 10.0;
 	//bigarr[bigarr.length-1] = 6.66;
 	console.log('[Master] Typeof buf:', buf.constructor.name,
 			'Typeof arr:', arr.constructor.name);
 	
-	var worker = cluster.fork();
+	const worker = cluster.fork();
 	worker.on('online', function() {
 		this.send({
 			msg: 'shm',
 			bufKey: buf.key,
-			arrKey:
-			arr.key,
+			arrKey: posixKey, //arr.key,
 			//bigarrKey: bigarr.key,
 		});
-		var i = 0;
+		let i = 0;
 		setInterval(function() {
 			buf[0] += 1;
 			arr[0] /= 2;
@@ -51,9 +56,11 @@ if (cluster.isMaster) {
 			}
 		}, 500);
 	});
+
+	process.on('exit', cleanup);
 } else {
 	process.on('message', function(data) {
-		var msg = data.msg;
+		const msg = data.msg;
 		if (msg == 'shm') {
 			buf = shm.get(data.bufKey);
 			arr = shm.get(data.arrKey, 'Float32Array');
@@ -61,7 +68,7 @@ if (cluster.isMaster) {
 			console.log('[Worker] Typeof buf:', buf.constructor.name,
 					'Typeof arr:', arr.constructor.name);
 			//console.log('[Worker] Test bigarr: ', bigarr[bigarr.length-1]);
-			var i = 0;
+			let i = 0;
 			setInterval(function() {
 				console.log(i + ' [Worker] Get buf[0]=', buf[0],
 					' arr[0]=', arr ? arr[0] : null);
@@ -77,9 +84,22 @@ if (cluster.isMaster) {
 	});
 }
 
+function cleanup() {
+	try {
+		if (shm.detach(key1, true) == 0) {
+			console.log(`Destroyed SydtemV memory segment with key ${key1}`);
+		}
+	} catch(_e) {}
+	try {
+		if (shm.detach(posixKey, true) == 0) {
+			console.log(`Destroyed POSIX memory object with key ${posixKey}`);
+		}
+	} catch(_e) {}
+};
+
 function groupSuicide() {
 	if (cluster.isMaster) {
-		for (var id in cluster.workers) {
+		for (const id in cluster.workers) {
 		    cluster.workers[id].send({ msg: 'exit'});
 		    cluster.workers[id].destroy();
 		}
@@ -102,7 +122,6 @@ function groupSuicide() {
 3 [Master] Set buf[0]= 5  arr[0]= 0.625
 3 [Worker] Get buf[0]= 5  arr[0]= null
 4 [Master] Set buf[0]= 6  arr[0]= 0.3125
-shm segments destroyed: 3
-
+shm segments destroyed: 1
 
 */

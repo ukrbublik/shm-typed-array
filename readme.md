@@ -12,23 +12,24 @@ Windows is not supported.
 
 # API
 
-### shm.create (count, typeKey [, key] [, perm])
+### shm.create (count, typeKey, key?, perm?)
 Create shared memory segment.  
 `count` - number of elements (not bytes), 
 `typeKey` - type of elements (`'Buffer'` by default, see list below), 
-`key` - optional integer to create shm with specific key, 
-`perm` - optional permissions flag (default is `660`). 
+`key` - integer/null to create SysV memory segment, or string to create POSIX memory object
+`perm` - permissions flag (default is `660`). 
 Returns shared memory `Buffer` or descendant of `TypedArray` object, class depends on param `typeKey`.  
 Or returns `null` if shm can't be created.  
-Returned object has property `key` - integer key of created shared memory segment, to use in `shm.get()`.
+If `key` is not string (SysV shared memory), returned object has property `key` - integer key of created SysV shared memory segment, to use in `shm.get()`.
 
 ### shm.get (key, typeKey)
 Get created shared memory segment. 
 Returns `null` if shm can't be opened.
 
-### shm.detach (key [, forceDestroy])
+### shm.detach (key, forceDestroy?)
 Detach shared memory segment.  
-If there are no other attaches for this segment (or `forceDestroy` is true), it will be destroyed.
+If there are no other attaches for SysV segment (or `forceDestroy` is true), it will be destroyed.  
+You can destroy POSIX memory object with `forceDestroy=true`.
 
 ### shm.detachAll ()
 Detach all created shared memory segments.  
@@ -51,7 +52,10 @@ shm.BufferType = {
 ```
 
 ### shm.getTotalSize()
-Get total size of all shared segments in bytes.
+Get total size of all *created* shared segments in bytes.
+
+### shm.getTotalUsedSize()
+Get total size of all *used* (mapped) shared segments in bytes.
 
 ### shm.LengthMax
 Max length of shared memory segment (count of elements, not bytes)  

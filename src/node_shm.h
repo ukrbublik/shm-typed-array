@@ -166,12 +166,16 @@ namespace node_shm {
 	 * Detach all created and getted shared memory segments
 	 * Returns count of destroyed segments
 	 */
-	NAN_METHOD(detachAll);
 
 	/**
-	 * Get total size of all shared segments in bytes
+	 * Get total size of all *created* shared memory in bytes
 	 */
 	NAN_METHOD(getTotalSize);
+
+	/**
+	 * Get total size of all *used* shared memory in bytes
+	 */
+	NAN_METHOD(getTotalUsedSize);
 
 	/**
 	 * Constants to be exported:

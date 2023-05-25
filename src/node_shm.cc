@@ -169,6 +169,7 @@ namespace node_shm {
 		void* memAddr;
 		size_t memSize;
 		std::string name;
+		bool isOwner;
 	};
 
 	#define NOT_FOUND_IND ULONG_MAX
@@ -235,6 +236,7 @@ namespace node_shm {
 		// Remove meta data from vector with .erase()
 		// But this requires to have key pairs `meta id` <-> `index in vector`
 		// And pass `meta id` to `hint` in `NewTypedBuffer()` (for `FreeCallback`)
+		return false;
 	}
 
 	// Detach segment or POSIX object
@@ -256,10 +258,10 @@ namespace node_shm {
 		//detach
 		err = meta.memAddr != NULL ? shmdt(meta.memAddr) : 0;
 		if (err == 0) {
-			meta.memAddr = NULL;
 			if (meta.memAddr != NULL) {
 				shmMappedBytes -= meta.memSize;
 			}
+			meta.memAddr = NULL;
 			if (meta.id == 0) {
 				// meta is obsolete, should be deleted from meta array
 				return 0;
@@ -271,9 +273,9 @@ namespace node_shm {
 				if (force || shminf.shm_nattch == 0) {
 					err = shmctl(meta.id, IPC_RMID, 0);
 					if (err == 0) {
-						meta.id = 0;
-						meta.memSize = 0;
 						shmAllocatedBytes -= shminf.shm_segsz;
+						meta.memSize = 0;
+						meta.id = 0;
 						meta.type = SHM_DELETED;
 						return 0; //detached and destroyed
 					} else {
@@ -306,10 +308,10 @@ namespace node_shm {
 		//detach
 		err = meta.memAddr != NULL ? munmap(meta.memAddr, meta.memSize) : 0;
 		if (err == 0) {
-			meta.memAddr = NULL;
 			if (meta.memAddr != NULL) {
 				shmMappedBytes -= meta.memSize;
 			}
+			meta.memAddr = NULL;
 			if (meta.name.empty()) {
 				// meta is obsolete, should be deleted from meta array
 				return 0;
@@ -318,8 +320,8 @@ namespace node_shm {
 			if (force) {
 				err = shm_unlink(meta.name.c_str());
 				if (err == 0) {
-					meta.memSize = 0;
 					shmAllocatedBytes -= meta.memSize;
+					meta.memSize = 0;
 					meta.name.clear();
 					meta.type = SHM_DELETED;
 					return 0; //detached and destroyed
@@ -396,7 +398,7 @@ namespace node_shm {
 				return Nan::ThrowError(strerror(errno));
 
 			ShmMeta meta = {
-				.type=SHM_TYPE_SYSTEMV, .id=shmid, .memAddr=res, .memSize=size, .name=""
+				.type=SHM_TYPE_SYSTEMV, .id=shmid, .memAddr=res, .memSize=size, .name="", .isOwner=isCreate
 			};
 			size_t metaInd = findShmSegmentInfo(meta);
 			if (metaInd == NOT_FOUND_IND) {
@@ -502,7 +504,7 @@ namespace node_shm {
 
 		// Write meta
 		ShmMeta meta = {
-			.type=SHM_TYPE_POSIX, .id=0, .memAddr=res, .memSize=realSize, .name=name
+			.type=SHM_TYPE_POSIX, .id=0, .memAddr=res, .memSize=realSize, .name=name, .isOwner=isCreate
 		};
 		size_t metaInd = findShmSegmentInfo(meta);
 		if (metaInd == NOT_FOUND_IND) {
@@ -554,7 +556,7 @@ namespace node_shm {
 					removeShmSegmentInfo(foundInd);
 				info.GetReturnValue().Set(Nan::New<Number>(res));
 			} else {
-				//not found in meta array, means not created by us
+				//not found in meta array, means not created/opened by us
 				int res = -1;
 				if (forceDestroy) {
 					res = detachShmSegment(meta, forceDestroy);
@@ -582,7 +584,7 @@ namespace node_shm {
 				removeShmSegmentInfo(foundInd);
 			info.GetReturnValue().Set(Nan::New<Number>(res));
 		} else {
-			//not found in meta array, means not created by us
+			//not found in meta array, means not created/opened by us
 			int res = -1;
 			if (forceDestroy) {
 				res = detachPosixShmObject(meta, forceDestroy);

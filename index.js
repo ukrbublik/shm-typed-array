@@ -49,16 +49,21 @@ const BufferTypeSizeof = {
 };
 
 /**
- * Create shared memory segment
+ * Create SystemV or POSIX shared memory
  * @param {int} count - number of elements
  * @param {string} typeKey - see keys of BufferType
- * @param {int/null} key - integer key of shared memory segment, or null to autogenerate
+ * @param {int/string/null} key - integer key for SystemV shared memory segment, or null to autogenerate,
+ *  or string name for POSIX shared memory object, should start with '/'.
  * @param {string} permStr - permissions, default is 660
  * @return {mixed/null} shared memory buffer/array object, or null on error
- *  Class depends on param typeKey: Buffer or descendant of TypedArray
- *  Return object has property 'key' - integer key of created shared memory segment
+ *  Class depends on param typeKey: Buffer or descendant of TypedArray.
+ *  If key is not string, returned object has property 'key' - integer key of created SystemV shared memory segment
  */
 function create(count, typeKey /*= 'Buffer'*/, key /*= null*/, permStr /*= '660'*/) {
+	if (typeof key === 'string') {
+		return createPosix(key, count, typeKey, permStr);
+	}
+
 	if (typeKey === undefined)
 		typeKey = 'Buffer';
 	if (key === undefined)
@@ -123,12 +128,15 @@ function createPosix(name, count, typeKey /*= 'Buffer'*/, permStr /*= '660'*/) {
 }
 
 /**
- * Get shared memory segment
- * @param {int} key - integer key of shared memory segment
+ * Get SystemV/POSIX shared memory
+ * @param {int/string} key - integer key of SystemV shared memory segment, or string name of POSIX shared memory object
  * @param {string} typeKey - see keys of BufferType
  * @return {mixed/null} shared memory buffer/array object, see create(), or null on error
  */
 function get(key, typeKey /*= 'Buffer'*/) {
+	if (typeof key === 'string') {
+		return getPosix(key, typeKey);
+	}
 	if (typeKey === undefined)
 		typeKey = 'Buffer';
 	if (BufferType[typeKey] === undefined)
@@ -162,13 +170,17 @@ function getPosix(name, typeKey /*= 'Buffer'*/) {
 }
 
 /**
- * Detach shared memory segment
- * If there are no other attaches for this segment, it will be destroyed
- * @param {int} key - integer key of shared memory segment
+ * Detach SystemV/POSIX shared memory
+ * For SystemV: If there are no other attaches for this segment, it will be destroyed
+ * For POSIX: Pass forceDestroy=true to unlink shared memory object
+ * @param {int/string} key - integer key of SystemV shared memory segment, or string name of POSIX shared memory object
  * @param {bool} forceDestroy - true to destroy even there are other attaches
  * @return {int} 0 on destroy, else count of left attaches or -1 on error
  */
 function detach(key, forceDestroy /*= false*/) {
+	if (typeof key === 'string') {
+		return detachPosix(key, forceDestroy);
+	}
 	if (forceDestroy === undefined)
 		forceDestroy = false;
 	return shm.detach(key, forceDestroy);
@@ -187,7 +199,7 @@ function detachPosix(name, forceDestroy /*= false*/) {
 }
 
 /**
- * Detach all created and getted shared memory segments
+ * Detach all created and getted shared memory objects (both SystemV and POSIX)
  * Will be automatically called on process exit/termination
  * @return {int} count of destroyed segments
  */

@@ -17,10 +17,10 @@ type ShmMap = {
 }
 
 /**
-* Create shared memory segment.
+* Create shared memory segment/object.
 * Returns null if shm can't be created.
 */
-export function create<K extends keyof ShmMap = 'Buffer'>(count: number, typeKey?: K, key?: number, perm?: string): ShmMap[K] | null;
+export function create<K extends keyof ShmMap = 'Buffer'>(count: number, typeKey?: K, key?: number | string, perm?: string): ShmMap[K] | null;
 
 /**
 * Create POSIX shared memory object.
@@ -29,10 +29,10 @@ export function create<K extends keyof ShmMap = 'Buffer'>(count: number, typeKey
 export function createPosix<K extends keyof ShmMap = 'Buffer'>(name: string, count: number, typeKey?: K, perm?: string): ShmMap[K] | null;
 
 /**
- * Get shared memory segment.
+ * Get shared memory segment/object.
  * Returns null if shm can't be opened.
  */
-export function get<K extends keyof ShmMap = 'Buffer'>(key: number, typeKey?: K): ShmMap[K] | null;
+export function get<K extends keyof ShmMap = 'Buffer'>(key: number | string, typeKey?: K): ShmMap[K] | null;
 
 /**
  * Get POSIX shared memory object.
@@ -41,10 +41,10 @@ export function get<K extends keyof ShmMap = 'Buffer'>(key: number, typeKey?: K)
 export function getPosix<K extends keyof ShmMap = 'Buffer'>(name: string, typeKey?: K): ShmMap[K] | null;
 
 /**
- * Detach shared memory segment.
+ * Detach shared memory segment/object.
  * If there are no other attaches for this segment, it will be destroyed.
  */
-export function detach(key: number, forceDestoy?: boolean): number;
+export function detach(key: number | string, forceDestoy?: boolean): number;
 
 /**
  * Detach POSIX shared memory object.
@@ -53,15 +53,20 @@ export function detach(key: number, forceDestoy?: boolean): number;
 export function detachPosix(name: string, forceDestoy?: boolean): number;
 
 /**
- * Detach all created and getted shared memory segments.
+ * Detach all created and getted shared memory segments/objects.
  * Will be automatically called on process exit/termination.
  */
 export function detachAll(): number;
 
 /**
- * Get total size of all shared segments in bytes.
+ * Get total size of all *created* shared memory in bytes.
  */
 export function getTotalSize(): number;
+
+/**
+ * Get total size of all *used* shared memory in bytes.
+ */
+export function getTotalUsedSize(): number;
 
 /**
  * Max length of shared memory segment (count of elements, not bytes).
