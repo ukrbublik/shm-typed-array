@@ -1,5 +1,6 @@
 'use strict';
-const shm = require('./build/Release/shm.node');
+const buildDir = process.env.DEBUG_SHM ? 'Debug' : 'Release';
+const shm = require('./build/' + buildDir + '/shm.node');
 
 const uint32Max = Math.pow(2,32) - 1;
 const keyMin = 1;

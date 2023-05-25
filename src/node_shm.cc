@@ -184,8 +184,7 @@ namespace node_shm {
 	static int detachShmSegment(ShmMeta meta, bool force = false, bool onExit = false);
 	static int detachPosixShmObject(ShmMeta meta, bool force = false, bool onExit = false);
 	static void initShmSegmentsInfo();
-	static void addShmSegmentInfo(ShmMeta meta);
-	static bool hasShmSegmentInfo(ShmMeta meta);
+	static ShmMeta* addShmSegmentInfo(ShmMeta meta);
 	static bool removeShmSegmentInfo(ShmMeta meta);
 	static void FreeCallback(char* data, void* hint);
   #if NODE_MODULE_VERSION < NODE_16_0_MODULE_VERSION
@@ -219,22 +218,28 @@ namespace node_shm {
 
 		SAFE_DELETE_ARR(shmSegmentsMeta);
 		shmSegmentsCnt = 0;
+		printf(">> detachAllShm OK\n");
 		return res;
 	}
 
 	// Add segment to meta arrays
-	static void addShmSegmentInfo(ShmMeta meta) {
+	static ShmMeta* addShmSegmentInfo(ShmMeta meta) {
 		ShmMeta* newShmSegmentsData;
 		if (shmSegmentsCnt == shmSegmentsMetaSize) {
 			//extend ararys by *2 when full
 			shmSegmentsMetaSize *= 2;
 			newShmSegmentsData = new ShmMeta[shmSegmentsMetaSize];
-			std::copy(shmSegmentsMeta, shmSegmentsMeta + shmSegmentsCnt, newShmSegmentsData);
+			std::copy(
+				shmSegmentsMeta, 
+				shmSegmentsMeta + shmSegmentsCnt * sizeof(ShmMeta), 
+				newShmSegmentsData
+			);
 			SAFE_DELETE_ARR(shmSegmentsMeta);
 			shmSegmentsMeta = newShmSegmentsData;
 		}
 		shmSegmentsMeta[shmSegmentsCnt] = meta;
 		shmSegmentsCnt++;
+		return &shmSegmentsMeta[shmSegmentsCnt];
 	}
 
   static ShmMeta* findShmSegmentInfo(ShmMeta search) {
@@ -249,24 +254,25 @@ namespace node_shm {
 		return (found != end ? found : NULL);
   }
 
-  static bool hasShmSegmentInfo(ShmMeta meta) {
-		return findShmSegmentInfo(meta) != NULL;
-  }
-
 	// Remove segment from meta arrays
 	static bool removeShmSegmentInfo(ShmMeta meta) {
+		printf("> removeShmSegmentInfo ..\n");
 		ShmMeta* found = findShmSegmentInfo(meta);
 		if (found == NULL)
 			return false; //not found
-		int i = found - shmSegmentsMeta;
+		int i = (found - shmSegmentsMeta) / sizeof(ShmMeta);
 		if (i == shmSegmentsCnt-1) {
 			//removing last element
 		} else {
-			std::copy(shmSegmentsMeta + i + 1,
-				shmSegmentsMeta + shmSegmentsCnt,
-				shmSegmentsMeta + i);
+			std::copy(
+				shmSegmentsMeta + (i + 1) * sizeof(ShmMeta),
+				shmSegmentsMeta + shmSegmentsCnt * sizeof(ShmMeta),
+				shmSegmentsMeta + i * sizeof(ShmMeta)
+			);
 		}
+		printf("> deleting name\n");
 		SAFE_DELETE_ARR(shmSegmentsMeta[shmSegmentsCnt-1].name);
+		printf("> deleted name OK\n");
 		shmSegmentsMeta[shmSegmentsCnt-1] = {};
 		shmSegmentsCnt--;
 		return true;
@@ -347,7 +353,9 @@ namespace node_shm {
 				err = shm_unlink(meta.name);
 				if (err == 0) {
 					shmSegmentsBytes -= meta.size;
-					SAFE_DELETE_ARR(meta.name);
+					if (meta.size) {
+						SAFE_DELETE_ARR(meta.name);
+					}
 					meta.size = 0;
 					return 0; //detached and destroyed
 				} else {
@@ -374,12 +382,14 @@ namespace node_shm {
 	// Developer can detach shared memory segments manually by shm.detach()
 	// Also shm.detachAll() will be called on process termination
 	static void FreeCallback(char* data, void* hint) {
+		printf("> FreeCallback...\n");
 		ShmMeta* meta = reinterpret_cast<ShmMeta*>(hint);
 		void* addr = (void*) data;
 
-		assert(meta->ptr == addr);
+		//assert(meta->ptr == addr);
     detachShmSegmentOrObject(*meta, false, true);
 		removeShmSegmentInfo(*meta);
+		printf("> FreeCallback OK\n");
 	}
 
 	NAN_METHOD(get) {
@@ -421,9 +431,14 @@ namespace node_shm {
 			if (res == (void *)-1)
 				return Nan::ThrowError(strerror(errno));
 
-			ShmMeta meta = {SHM_TYPE_SYSTEMV, shmid, res, size, count, type, NULL};
-			if (!hasShmSegmentInfo(meta)) {
-				addShmSegmentInfo(meta);
+			ShmMeta meta = {
+				.type=SHM_TYPE_SYSTEMV, .id=shmid, .ptr=res, .size=size, .bufCount=count, .bufType=type, .name=NULL
+			};
+			ShmMeta* savedMeta = findShmSegmentInfo(meta);
+			if (savedMeta == NULL) {
+				printf("??? add .. \n");
+				savedMeta = addShmSegmentInfo(meta);
+				printf("??? add OK \n");
 				shmSegmentsBytes += size;
 			}
 
@@ -431,9 +446,10 @@ namespace node_shm {
 				reinterpret_cast<char*>(res),
 				count,
 				FreeCallback,
-				reinterpret_cast<void*>(static_cast<ShmMeta*>(&meta)),
+				reinterpret_cast<void*>(savedMeta),
 				type
 			).ToLocalChecked());
+			printf(" created NewTypedBuffer \n");
 		}
 	}
 
@@ -510,33 +526,43 @@ namespace node_shm {
 
 		// Read/write actual buffer size at start of shared memory
 		size_t* sizePtr = (size_t*) res;
-		char* buf = reinterpret_cast<char*>(res);
+		char* buf = (char*) res;
 		buf += sizeof(size);
 		if (isCreate) {
+			printf("> write size %i %i  ! %i\n", size, realSize, isCreate ? realSize - 8 : realSize);
 			*sizePtr = size;
 		} else {
 			size = *sizePtr;
 			count = size / getSize1ForShmBufferType(type);
+			printf("> read size %i %i\n", size, realSize);
 		}
 
 		// Write meta
+		printf("> writing meta\n");
 		char* cstr = new char[name.length()+1];
+		printf("> wrote name %s\n", name.c_str());
 		std::strcpy(cstr, name.c_str());
-		ShmMeta meta = {SHM_TYPE_POSIX, 0, res, realSize, count, type, cstr};
-		if (!hasShmSegmentInfo(meta)) {
-			addShmSegmentInfo(meta);
+		printf("> wrote name2 %s\n", cstr);
+		ShmMeta meta = {
+			.type=SHM_TYPE_POSIX, .id=0, .ptr=res, .size=realSize, .bufCount=count, .bufType=type, .name=cstr
+		};
+		ShmMeta* savedMeta = findShmSegmentInfo(meta);
+		if (savedMeta == NULL) {
+			savedMeta = addShmSegmentInfo(meta);
 			shmSegmentsBytes += realSize;
 		}
+		printf("> wrote meta\n");
 
 		// Don't save to meta
 		close(fd);
+		fd = 0;
 
 		// Build and return buffer
 		info.GetReturnValue().Set(Nan::NewTypedBuffer(
 			buf,
 			count,
 			FreeCallback,
-			reinterpret_cast<void*>(static_cast<ShmMeta*>(&meta)),
+			reinterpret_cast<void*>(savedMeta),
 			type
 		).ToLocalChecked());
 	}
@@ -557,7 +583,10 @@ namespace node_shm {
 					return Nan::ThrowError(strerror(errno));
 			}
 		} else {
-		  ShmMeta* found = findShmSegmentInfo({SHM_TYPE_SYSTEMV, shmid, NULL, 0, 0, SHMBT_BUFFER, NULL});
+			ShmMeta meta = {
+				.type=SHM_TYPE_SYSTEMV, .id=shmid, .ptr=NULL, .size=0, .bufCount=0, .bufType=SHMBT_BUFFER, .name=NULL
+			};
+		  ShmMeta* found = findShmSegmentInfo(meta);
 			if (found != NULL) {
 				int res = detachShmSegment(*found, forceDestroy);
 				if (res != -1)
@@ -567,7 +596,6 @@ namespace node_shm {
 				//not found in meta array, means not created by us
 				int res = -1;
 				if (forceDestroy) {
-					ShmMeta meta = {SHM_TYPE_SYSTEMV, shmid, NULL, 0, 0, SHMBT_BUFFER, NULL};
 					res = detachShmSegment(meta, forceDestroy);
 				}
 				info.GetReturnValue().Set(Nan::New<Number>(res));
@@ -583,7 +611,10 @@ namespace node_shm {
 		std::string name = (*Nan::Utf8String(info[0]));
 		bool forceDestroy = Nan::To<bool>(info[1]).FromJust();
 
-		ShmMeta* found = findShmSegmentInfo({SHM_TYPE_POSIX, NULL, NULL, 0, 0, SHMBT_BUFFER, name.c_str()});
+		ShmMeta meta = {
+			.type=SHM_TYPE_POSIX, .id=0, .ptr=NULL, .size=0, .bufCount=0, .bufType=SHMBT_BUFFER, .name=name.c_str()
+		};
+		ShmMeta* found = findShmSegmentInfo(meta);
 		if (found != NULL) {
 			int res = detachPosixShmObject(*found, forceDestroy);
 			if (res != -1)
@@ -593,8 +624,7 @@ namespace node_shm {
 			//not found in meta array, means not created by us
 			int res = -1;
 			if (forceDestroy) {
-				ShmMeta meta = {SHM_TYPE_POSIX, NULL, NULL, 0, 0, SHMBT_BUFFER, name.c_str()};
-				res = detachShmSegment(meta, forceDestroy);
+				res = detachPosixShmObject(meta, forceDestroy);
 			}
 			info.GetReturnValue().Set(Nan::New<Number>(res));
 		}
