@@ -50,11 +50,11 @@
     "build:debug": "node-gyp configure --debug && node-gyp rebuild --debug",
     "install": "npm run build",
     "test": "node test/example.js",
-    "test-types": "typings-tester --config test/tsconfig.json test/typings.ts"
+    "test:types": "typings-tester --config test/tsconfig.json test/typings.ts"
   },
   "devDependencies": {
-    "@types/node": "^10.9.4",
-    "typescript": "^2.9.2",
-    "typings-tester": "^0.3.1"
+    "@types/node": "^20.2.3",
+    "typescript": "^4.8.4",
+    "typings-tester": "^0.3.2"
   }
 }

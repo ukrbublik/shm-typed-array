@@ -1,5 +1,5 @@
 'use strict';
-const buildDir = process.env.DEBUG_SHM ? 'Debug' : 'Release';
+const buildDir = process.env.DEBUG_SHM == 1 ? 'Debug' : 'Release';
 const shm = require('./build/' + buildDir + '/shm.node');
 
 const uint32Max = Math.pow(2,32) - 1;
@@ -166,7 +166,7 @@ function getPosix(name, typeKey /*= 'Buffer'*/) {
  * If there are no other attaches for this segment, it will be destroyed
  * @param {int} key - integer key of shared memory segment
  * @param {bool} forceDestroy - true to destroy even there are other attaches
- * @return {int} count of left attaches or -1 on error
+ * @return {int} 0 on destroy, else count of left attaches or -1 on error
  */
 function detach(key, forceDestroy /*= false*/) {
 	if (forceDestroy === undefined)
@@ -178,7 +178,7 @@ function detach(key, forceDestroy /*= false*/) {
  * Detach POSIX shared memory object
  * @param {string} name - string name of shared memory object
  * @param {bool} forceDestroy - true to unlink
- * @return {int} 0 on detach, 1 on destroy, -1 on error
+ * @return {int} 0 on destroy, 1 on detach, -1 on error
  */
 function detachPosix(name, forceDestroy /*= false*/) {
 	if (forceDestroy === undefined)

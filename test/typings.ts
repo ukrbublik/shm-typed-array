@@ -1,6 +1,8 @@
 import * as shm from '../index'
 
 // typings:expect-error
+shm.create();
+// typings:expect-error
 let fail1: Buffer = shm.create(1);
 let pass1: shm.Shm<Buffer> | null = shm.create(1);
 
@@ -27,10 +29,18 @@ shm.getTotalSize() as number;
 shm.LengthMax as number;
 
 // typings:expect-error
-let fail5: Buffer = shm.createPosix();
-let fail6: Buffer = shm.createPosix('/test');
+shm.createPosix();
+// typings:expect-error
+shm.createPosix('/test');
 let pass5: shm.Shm<Buffer> | null = shm.createPosix('/test', 1);
 
 // typings:expect-error
-let fail7: Buffer = shm.getPosix();
+shm.getPosix();
 let pass6: shm.Shm<Buffer> | null = shm.getPosix('/test');
+
+// typings:expect-error
+shm.detachPosix();
+// typings:expect-error
+shm.detachPosix(123);
+shm.detachPosix('/test') as number;
+shm.detachPosix('/test', true) as number;

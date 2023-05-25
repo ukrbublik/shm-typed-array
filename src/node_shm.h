@@ -14,6 +14,8 @@
 
 #include <algorithm>
 #include <array>
+#include <vector>
+#include <string>
 
 using namespace node;
 using namespace v8;
@@ -50,7 +52,7 @@ enum ShmBufferType {
 	SHMBT_FLOAT64
 };
 
-inline int getSize1ForShmBufferType(ShmBufferType type) {
+inline int getSizeForShmBufferType(ShmBufferType type) {
 	size_t size1 = 0;
 	switch(type) {
 		case SHMBT_BUFFER:
