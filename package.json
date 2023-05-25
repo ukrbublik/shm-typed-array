@@ -1,6 +1,6 @@
 {
   "name": "shm-typed-array",
-  "version": "0.0.16",
+  "version": "0.1.0",
   "description": "IPC shared memory for NodeJs. Use as Buffer or TypedArray.",
   "main": "index.js",
   "types": "index.d.ts",
