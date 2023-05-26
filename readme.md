@@ -1,6 +1,6 @@
 IPC shared memory for Node.js  
 Use as `Buffer` or `TypedArray`  
-Supports System V and POSIX shared memory
+Supports System V and POSIX shared memory  
 [![npm](https://img.shields.io/npm/v/shm-typed-array.svg)](https://www.npmjs.com/package/shm-typed-array) [![travis](https://travis-ci.org/ukrbublik/shm-typed-array.svg?branch=master)](https://travis-ci.com/github/ukrbublik/shm-typed-array)
 
 
@@ -18,10 +18,10 @@ Starting from version 0.1.0 [POSIX memory objects](https://man7.org/linux/man-pa
 System V is the classic way to use shared memory, stores IPC objects internally in the kernel.  
 POSIX is newer, but not fully supported in MacOS, uses the file system interface. 
 
-To create POSIX memory objects, use string parameter `key` in [API](#api). 
+To create POSIX memory objects, use string parameter `key` in [API](#api).  
 Eg. `shm.create(100, 'Buffer', '/test')` will create virtual file `/dev/shm/test` in tmpfs for Linix. 
 
-To create System V memory segment, use numeric parameter `key` in [API](#api). 
+To create System V memory segment, use numeric parameter `key` in [API](#api).  
 Eg. `shm.create(100, 'Buffer', 1234)` or `shm.create(100)` to autogenerate key. 
 
 
