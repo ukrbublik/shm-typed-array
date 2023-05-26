@@ -273,7 +273,7 @@ namespace node_shm {
 				if (force || shminf.shm_nattch == 0) {
 					err = shmctl(meta.id, IPC_RMID, 0);
 					if (err == 0) {
-						shmAllocatedBytes -= shminf.shm_segsz;
+						shmAllocatedBytes -= meta.memSize; // shminf.shminf.shm_segsz
 						meta.memSize = 0;
 						meta.id = 0;
 						meta.type = SHM_DELETED;
