@@ -74,7 +74,8 @@ if (cluster.isMaster) {
 			buf = shm.get(data.bufKey);
 			arr = shm.get(data.arrKey, 'Float32Array');
 			assert.equal(shm.getTotalCreatedSize(), 0);
-			assert.equal(shm.getTotalSize(), 4096 + 40960); // actual size of POSIX object is multiple of PAGE_SIZE = 4096
+			// actual size of POSIX object can be multiple of PAGE_SIZE = 4096, but not for all OS
+			assert(shm.getTotalSize() == 4096 + 40960 || shm.getTotalSize() == 4096 + 10000*4+8);
 
 			//bigarr = shm.get(data.bigarrKey, 'Float32Array');
 			console.log('[Worker] Typeof buf:', buf.constructor.name,
