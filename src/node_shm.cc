@@ -39,11 +39,11 @@ namespace Buffer {
 		char* data,
 		size_t count
 	#if NODE_MODULE_VERSION > IOJS_2_0_MODULE_VERSION
-	    , node::Buffer::FreeCallback callback
+		, node::Buffer::FreeCallback callback
 	#else
-	    , node::smalloc::FreeCallback callback
+		, node::smalloc::FreeCallback callback
 	#endif
-	    , void *hint
+		, void *hint
 		, ShmBufferType type
 	) {
 		size_t length = count * getSizeForShmBufferType(type);
@@ -109,37 +109,37 @@ namespace Buffer {
 namespace Nan {
 
 	inline MaybeLocal<Object> NewTypedBuffer(
-	      char *data
-	    , size_t count
+		char *data
+		, size_t count
 	#if NODE_MODULE_VERSION > IOJS_2_0_MODULE_VERSION
-	    , node::Buffer::FreeCallback callback
+		, node::Buffer::FreeCallback callback
 	#else
-	    , node::smalloc::FreeCallback callback
+		, node::smalloc::FreeCallback callback
 	#endif
-	    , void *hint
-	    , ShmBufferType type
+		, void *hint
+		, ShmBufferType type
 	) {
 		size_t length = count * getSizeForShmBufferType(type);
 
 		if (type != SHMBT_BUFFER) {
-	  	assert(count <= node::Buffer::kMaxLength && "too large typed buffer");
+		 	assert(count <= node::Buffer::kMaxLength && "too large typed buffer");
 			#if NODE_MODULE_VERSION > IOJS_2_0_MODULE_VERSION
-			    return node::Buffer::NewTyped(
-			        Isolate::GetCurrent(), data, count, callback, hint, type);
+				return node::Buffer::NewTyped(
+					Isolate::GetCurrent(), data, count, callback, hint, type);
 			#else
-			    return MaybeLocal<v8::Object>(node::Buffer::NewTyped(
-			        Isolate::GetCurrent(), data, count, callback, hint, type));
+				return MaybeLocal<v8::Object>(node::Buffer::NewTyped(
+					Isolate::GetCurrent(), data, count, callback, hint, type));
 			#endif
-	  } else {
-	  	assert(length <= node::Buffer::kMaxLength && "too large buffer");
+		} else {
+			assert(length <= node::Buffer::kMaxLength && "too large buffer");
 			#if NODE_MODULE_VERSION > IOJS_2_0_MODULE_VERSION
-			    return node::Buffer::New(
-			        Isolate::GetCurrent(), data, length, callback, hint);
+				return node::Buffer::New(
+					Isolate::GetCurrent(), data, length, callback, hint);
 			#else
-			    return MaybeLocal<v8::Object>(node::Buffer::New(
-			        Isolate::GetCurrent(), data, length, callback, hint));
+				return MaybeLocal<v8::Object>(node::Buffer::New(
+					Isolate::GetCurrent(), data, length, callback, hint));
 			#endif
-	  }
+		}
 
 	}
 
@@ -188,25 +188,24 @@ namespace node_shm {
 	static bool removeShmSegmentInfo(size_t ind);
 
 	static void FreeCallback(char* data, void* hint);
-  #if NODE_MODULE_VERSION < NODE_16_0_MODULE_VERSION
+	#if NODE_MODULE_VERSION < NODE_16_0_MODULE_VERSION
 	static void Init(Local<Object> target);
-  #else
+	#else
 	static void Init(Local<Object> target, Local<Value> module, void* priv);
-  #endif
+	#endif
 	static void AtNodeExit(void*);
 
 
-	// Detach all segments (don't force destroy) and clear meta array
-	// Returns count of destroyed segments
+	// Detach all System V segments and POSIX objects (don't force destroy)
+	// Returns count of destroyed System V segments
 	static int detachAllShm() {
 		int res = 0;
 		if (shmMeta.size() > 0) {
-  		for (std::vector<ShmMeta>::iterator it = shmMeta.begin(); it != shmMeta.end(); ++it) {
+			for (std::vector<ShmMeta>::iterator it = shmMeta.begin(); it != shmMeta.end(); ++it) {
 				if (detachShmSegmentOrObject(*it, false, true) == 0)
 					res++;
 			}
 		}
-		shmMeta.clear();
 		return res;
 	}
 
@@ -218,17 +217,17 @@ namespace node_shm {
 	}
 
 	// Find in mera array
-  static size_t findShmSegmentInfo(ShmMeta& search) {
+	static size_t findShmSegmentInfo(ShmMeta& search) {
 		const auto found = std::find_if(shmMeta.begin(), shmMeta.end(),
-      [&](const auto& el) {
-        return el.type == search.type 
+			[&](const auto& el) {
+				return el.type == search.type 
 					&& (search.id == 0 || el.id == search.id) 
 					&& (search.name.length() == 0 || search.name.compare(el.name) == 0);
 			}
-    );
+		);
 		size_t ind = found != shmMeta.end() ? std::distance(shmMeta.begin(), found) : NOT_FOUND_IND;
 		return ind;
-  }
+	}
 
 	// Remove from meta array
 	static bool removeShmSegmentInfo(size_t ind) {
@@ -239,8 +238,8 @@ namespace node_shm {
 		return false;
 	}
 
-	// Detach segment or POSIX object
-	// Returns 0 if destroyed, > 0 if detached, -1 on error
+	// Detach System V segment or POSIX object
+	// Returns 0 if destroyed, > 0 if detached, -1 if not exists
 	static int detachShmSegmentOrObject(ShmMeta& meta, bool force, bool onExit) {
 		if (meta.type == SHM_TYPE_SYSTEMV) {
 			return detachShmSegment(meta, force, onExit);
@@ -250,15 +249,16 @@ namespace node_shm {
 		return -1;
 	}
 
-	// Detach segment
-	// Returns count of left attaches or -1 on error
+	// Detach System V segment
+	// Returns 0 if destroyed, or count of left attaches, or -1 if not exists
 	static int detachShmSegment(ShmMeta& meta, bool force, bool onExit) {
 		int err;
 		struct shmid_ds shminf;
 		//detach
-		err = meta.memAddr != NULL ? shmdt(meta.memAddr) : 0;
+		bool attached = meta.memAddr != NULL;
+		err = attached ? shmdt(meta.memAddr) : 0;
 		if (err == 0) {
-			if (meta.memAddr != NULL) {
+			if (attached) {
 				shmMappedBytes -= meta.memSize;
 			}
 			meta.memAddr = NULL;
@@ -286,6 +286,17 @@ namespace node_shm {
 					return shminf.shm_nattch; //detached, but not destroyed
 				}
 			} else {
+				switch(errno) {
+					case EIDRM:   // deleted shmid
+					case EINVAL:  // not valid shmid
+						return -1;
+					break;
+					default:
+						if (!onExit)
+							Nan::ThrowError(strerror(errno));
+					break;
+				}
+
 				if (!onExit)
 					Nan::ThrowError(strerror(errno));
 			}
@@ -302,13 +313,14 @@ namespace node_shm {
 	}
 
 	// Detach POSIX object
-	// Returns 0 if deleted, 1 if detached, -1 on error
+	// Returns 0 if deleted, 1 if detached, -1 if not exists
 	static int detachPosixShmObject(ShmMeta& meta, bool force, bool onExit) {
 		int err;
 		//detach
-		err = meta.memAddr != NULL ? munmap(meta.memAddr, meta.memSize) : 0;
+		bool attached = meta.memAddr != NULL;
+		err = attached ? munmap(meta.memAddr, meta.memSize) : 0;
 		if (err == 0) {
-			if (meta.memAddr != NULL) {
+			if (attached) {
 				shmMappedBytes -= meta.memSize;
 			}
 			meta.memAddr = NULL;
@@ -326,8 +338,15 @@ namespace node_shm {
 					meta.type = SHM_DELETED;
 					return 0; //detached and destroyed
 				} else {
-					if (!onExit)
-						Nan::ThrowError(strerror(errno));
+					switch(errno) {
+						case ENOENT: // not exists
+							return -1;
+						break;
+						default:
+							if (!onExit)
+								Nan::ThrowError(strerror(errno));
+						break;
+					}
 				}
 			} else {
 				return 1; //detached, but not destroyed
@@ -354,7 +373,7 @@ namespace node_shm {
 		//void* addr = (void*) data;
 		//assert(meta->memAddr == addr);
 
-    detachShmSegmentOrObject(meta, false, true);
+		detachShmSegmentOrObject(meta, false, true);
 		removeShmSegmentInfo(metaInd);
 	}
 
@@ -389,13 +408,15 @@ namespace node_shm {
 				if (err == 0) {
 					size = shminf.shm_segsz;
 					count = size / getSizeForShmBufferType(type);
-				} else
+				} else {
 					return Nan::ThrowError(strerror(errno));
+				}
 			}
 
 			void* res = shmat(shmid, NULL, at_shmflg);
-			if (res == (void *)-1)
+			if (res == (void *)-1) {
 				return Nan::ThrowError(strerror(errno));
+			}
 
 			ShmMeta meta = {
 				.type=SHM_TYPE_SYSTEMV, .id=shmid, .memAddr=res, .memSize=size, .name="", .isOwner=isCreate
@@ -406,6 +427,7 @@ namespace node_shm {
 			}
 			if (isCreate) {
 				shmAllocatedBytes += size;
+				shmMappedBytes += size;
 			} else {
 				shmMappedBytes += size;
 			}
@@ -414,7 +436,7 @@ namespace node_shm {
 				reinterpret_cast<char*>(res),
 				count,
 				FreeCallback,
-			  reinterpret_cast<void*>(static_cast<intptr_t>(metaInd)),
+				reinterpret_cast<void*>(static_cast<intptr_t>(metaInd)),
 				type
 			).ToLocalChecked());
 		}
@@ -439,6 +461,10 @@ namespace node_shm {
 		int fd = shm_open(name.c_str(), oflag, mode);
 		if (fd == -1) {
 			switch(errno) {
+				case EEXIST: // already exists
+				case ENOENT: // not exists
+					info.GetReturnValue().SetNull();
+					return;
 				case ENAMETOOLONG: // length of name exceeds PATH_MAX
 					return Nan::ThrowRangeError(strerror(errno));
 				default:
@@ -461,8 +487,8 @@ namespace node_shm {
 			}
 		}
 
-		// Get size (not accurate, multiplies PAGE_SIZE)
-    struct stat sb;
+		// Get size (not accurate, multiple of PAGE_SIZE = 4096)
+		struct stat sb;
 		int resStat;
 		if (!isCreate) {
 			resStat = fstat(fd, &sb);
@@ -512,6 +538,7 @@ namespace node_shm {
 		}
 		if (isCreate) {
 			shmAllocatedBytes += realSize;
+			shmMappedBytes += realSize;
 		} else {
 			shmMappedBytes += realSize;
 		}
@@ -549,7 +576,7 @@ namespace node_shm {
 			ShmMeta meta = {
 				.type=SHM_TYPE_SYSTEMV, .id=shmid, .memAddr=NULL, .memSize=0, .name=""
 			};
-		  size_t foundInd = findShmSegmentInfo(meta);
+			size_t foundInd = findShmSegmentInfo(meta);
 			if (foundInd != NOT_FOUND_IND) {
 				int res = detachShmSegment(shmMeta[foundInd], forceDestroy);
 				if (res != -1)
@@ -598,7 +625,7 @@ namespace node_shm {
 		info.GetReturnValue().Set(Nan::New<Number>(cnt));
 	}
 
-	NAN_METHOD(getTotalSize) {
+	NAN_METHOD(getTotalAllocatedSize) {
 		info.GetReturnValue().Set(Nan::New<Number>(shmAllocatedBytes));
 	}
 
@@ -609,14 +636,15 @@ namespace node_shm {
 	// node::AtExit
 	static void AtNodeExit(void*) {
 		detachAllShm();
+		shmMeta.clear();
 	}
 
 	// Init module
-  #if NODE_MODULE_VERSION < NODE_16_0_MODULE_VERSION
+	#if NODE_MODULE_VERSION < NODE_16_0_MODULE_VERSION
 	static void Init(Local<Object> target) {
-  #else
+	#else
 	static void Init(Local<Object> target, Local<Value> module, void* priv) {
-  #endif
+	#endif
 
 		detachAllShm();
 
@@ -625,7 +653,7 @@ namespace node_shm {
 		Nan::SetMethod(target, "detach", detach);
 		Nan::SetMethod(target, "detachPosix", detachPosix);
 		Nan::SetMethod(target, "detachAll", detachAll);
-		Nan::SetMethod(target, "getTotalSize", getTotalSize);
+		Nan::SetMethod(target, "getTotalAllocatedSize", getTotalAllocatedSize);
 		Nan::SetMethod(target, "getTotalUsedSize", getTotalUsedSize);
 
 		Nan::Set(target, Nan::New("IPC_PRIVATE").ToLocalChecked(), Nan::New<Number>(IPC_PRIVATE));

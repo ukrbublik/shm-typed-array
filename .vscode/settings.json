@@ -2,7 +2,8 @@
     "files.associations": {
         "__bit_reference": "cpp",
         "unordered_map": "cpp",
-        "string": "cpp"
+        "string": "cpp",
+        "vector": "cpp"
     },
     "terminal.integrated.defaultProfile.linux": "bash",
     "terminal.integrated.profiles.osx": {

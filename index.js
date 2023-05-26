@@ -49,15 +49,15 @@ const BufferTypeSizeof = {
 };
 
 /**
- * Create SystemV or POSIX shared memory
+ * Create System V or POSIX shared memory
  * @param {int} count - number of elements
  * @param {string} typeKey - see keys of BufferType
- * @param {int/string/null} key - integer key for SystemV shared memory segment, or null to autogenerate,
+ * @param {int/string/null} key - integer key for System V shared memory segment, or null to autogenerate,
  *  or string name for POSIX shared memory object, should start with '/'.
  * @param {string} permStr - permissions, default is 660
- * @return {mixed/null} shared memory buffer/array object, or null on error
+ * @return {mixed/null} shared memory buffer/array object, or null if already exists with provided key
  *  Class depends on param typeKey: Buffer or descendant of TypedArray.
- *  If key is not string, returned object has property 'key' - integer key of created SystemV shared memory segment
+ *  For System V: returned object has property 'key' - integer key of created shared memory segment
  */
 function create(count, typeKey /*= 'Buffer'*/, key /*= null*/, permStr /*= '660'*/) {
 	if (typeof key === 'string') {
@@ -75,7 +75,7 @@ function create(count, typeKey /*= 'Buffer'*/, key /*= null*/, permStr /*= '660'
 			throw new RangeError('Shm key should be ' + keyMin + ' .. ' + keyMax);
 	}
 	if (permStr === undefined || isNaN( Number.parseInt(permStr, 8)))
-	  permStr = '660';
+		permStr = '660';
 	const perm = Number.parseInt(permStr, 8);
 
 	var type = BufferType[typeKey];
@@ -105,7 +105,7 @@ function create(count, typeKey /*= 'Buffer'*/, key /*= null*/, permStr /*= '660'
  * @param {int} count - number of elements
  * @param {string} typeKey - see keys of BufferType
  * @param {string} permStr - permissions, default is 660
- * @return {mixed/null} shared memory buffer/array object, or null on error
+ * @return {mixed/null} shared memory buffer/array object, or null if already exists with provided name
  *  Class depends on param typeKey: Buffer or descendant of TypedArray
  */
 function createPosix(name, count, typeKey /*= 'Buffer'*/, permStr /*= '660'*/) {
@@ -114,12 +114,14 @@ function createPosix(name, count, typeKey /*= 'Buffer'*/, permStr /*= '660'*/) {
 	if (BufferType[typeKey] === undefined)
 		throw new Error("Unknown type key " + typeKey);
 	if (permStr === undefined || isNaN( Number.parseInt(permStr, 8)))
-	  permStr = '660';
+		permStr = '660';
 	const perm = Number.parseInt(permStr, 8);
 
 	const type = BufferType[typeKey];
 	//var size1 = BufferTypeSizeof[typeKey];
 	//var size = size1 * count;
+	if (!(Number.isSafeInteger(count) && count >= lengthMin && count <= lengthMax))
+		throw new RangeError('Count should be ' + lengthMin + ' .. ' + lengthMax);
 	const oflag = shm.O_CREAT | shm.O_RDWR | shm.O_EXCL;
 	const mmap_flags = shm.MAP_SHARED;
 	const res = shm.getPosix(name, count, oflag, perm, mmap_flags, type);
@@ -128,10 +130,10 @@ function createPosix(name, count, typeKey /*= 'Buffer'*/, permStr /*= '660'*/) {
 }
 
 /**
- * Get SystemV/POSIX shared memory
- * @param {int/string} key - integer key of SystemV shared memory segment, or string name of POSIX shared memory object
+ * Get System V/POSIX shared memory
+ * @param {int/string} key - integer key of System V shared memory segment, or string name of POSIX shared memory object
  * @param {string} typeKey - see keys of BufferType
- * @return {mixed/null} shared memory buffer/array object, see create(), or null on error
+ * @return {mixed/null} shared memory buffer/array object, see create(), or null if not exists
  */
 function get(key, typeKey /*= 'Buffer'*/) {
 	if (typeof key === 'string') {
@@ -155,7 +157,7 @@ function get(key, typeKey /*= 'Buffer'*/) {
  * Get POSIX shared memory object
  * @param {string} name - string name of shared memory object
  * @param {string} typeKey - see keys of BufferType
- * @return {mixed/null} shared memory buffer/array object, see createPosix(), or null on error
+ * @return {mixed/null} shared memory buffer/array object, see createPosix(), or null if not exists
  */
 function getPosix(name, typeKey /*= 'Buffer'*/) {
 	if (typeKey === undefined)
@@ -170,12 +172,12 @@ function getPosix(name, typeKey /*= 'Buffer'*/) {
 }
 
 /**
- * Detach SystemV/POSIX shared memory
- * For SystemV: If there are no other attaches for this segment, it will be destroyed
- * For POSIX: Pass forceDestroy=true to unlink shared memory object
- * @param {int/string} key - integer key of SystemV shared memory segment, or string name of POSIX shared memory object
+ * Detach System V/POSIX shared memory
+ * For System V: If there are no other attaches for this segment, it will be destroyed
+ * For POSIX: It will be destroyed only if `forceDestroy` is true
+ * @param {int/string} key - integer key of System V shared memory segment, or string name of POSIX shared memory object
  * @param {bool} forceDestroy - true to destroy even there are other attaches
- * @return {int} 0 on destroy, else count of left attaches or -1 on error
+ * @return {int} 0 on destroy, or count of left attaches, or -1 if not exists
  */
 function detach(key, forceDestroy /*= false*/) {
 	if (typeof key === 'string') {
@@ -190,7 +192,7 @@ function detach(key, forceDestroy /*= false*/) {
  * Detach POSIX shared memory object
  * @param {string} name - string name of shared memory object
  * @param {bool} forceDestroy - true to unlink
- * @return {int} 0 on destroy, 1 on detach, -1 on error
+ * @return {int} 0 on destroy, 1 on detach, -1 if not exists
  */
 function detachPosix(name, forceDestroy /*= false*/) {
 	if (forceDestroy === undefined)
@@ -199,9 +201,18 @@ function detachPosix(name, forceDestroy /*= false*/) {
 }
 
 /**
- * Detach all created and getted shared memory objects (both SystemV and POSIX)
+ * Destroy System V/POSIX shared memory
+ * @param {int/string} key - integer key of System V shared memory segment, or string name of POSIX shared memory object
+ * @return {boolean}
+ */
+function destroy(key) {
+	return detach(key, true) == 0;
+}
+
+/**
+ * Detach all created and getted shared memory objects (both System V and POSIX)
  * Will be automatically called on process exit/termination
- * @return {int} count of destroyed segments
+ * @return {int} count of destroyed System V segments
  */
 function detachAll() {
 	return shm.detachAll();
@@ -218,8 +229,9 @@ module.exports.get = get;
 module.exports.getPosix = getPosix;
 module.exports.detach = detach;
 module.exports.detachPosix = detachPosix;
+module.exports.destroy = destroy;
 module.exports.detachAll = detachAll;
-module.exports.getTotalSize = shm.getTotalSize;
-module.exports.getTotalUsedSize = shm.getTotalUsedSize;
+module.exports.getTotalSize = shm.getTotalUsedSize;
+module.exports.getTotalCreatedSize = shm.getTotalAllocatedSize;
 module.exports.BufferType = BufferType;
 module.exports.LengthMax = lengthMax;

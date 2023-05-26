@@ -87,11 +87,11 @@ namespace Buffer {
 		char* data, 
 		size_t length
 	#if NODE_MODULE_VERSION > IOJS_2_0_MODULE_VERSION
-	    , node::Buffer::FreeCallback callback
+		, node::Buffer::FreeCallback callback
 	#else
-	    , node::smalloc::FreeCallback callback
+		, node::smalloc::FreeCallback callback
 	#endif
-	    , void *hint
+		, void *hint
 		, ShmBufferType type = SHMBT_FLOAT64
 	);
 
@@ -102,14 +102,14 @@ namespace Buffer {
 namespace Nan {
 
 	inline MaybeLocal<Object> NewTypedBuffer(
-	      char *data
-	    , size_t length
+		char *data
+		, size_t length
 #if NODE_MODULE_VERSION > IOJS_2_0_MODULE_VERSION
-	    , node::Buffer::FreeCallback callback
+		, node::Buffer::FreeCallback callback
 #else
-	    , node::smalloc::FreeCallback callback
+		, node::smalloc::FreeCallback callback
 #endif
-	    , void *hint
+		, void *hint
 		, ShmBufferType type = SHMBT_FLOAT64
 	);
 
@@ -120,7 +120,7 @@ namespace node {
 namespace node_shm {
 
 	/**
-	 * Create or get shared memory segment
+	 * Create or get System V shared memory segment
 	 * Params:
 	 *  key_t key
 	 *  size_t count - count of elements, not bytes
@@ -128,6 +128,7 @@ namespace node_shm {
 	 *  int at_shmflg - flags for shmat()
 	 *  enum ShmBufferType type
 	 * Returns buffer or typed array, depends on input param type
+	 * If not exists/alreeady exists, returns null
 	 */
 	NAN_METHOD(get);
 
@@ -141,36 +142,38 @@ namespace node_shm {
 	 *  int mmap_flags - flags for mmap()
 	 *  enum ShmBufferType type
 	 * Returns buffer or typed array, depends on input param type
+	 * If not exists/alreeady exists, returns null
 	 */
 	NAN_METHOD(getPosix);
 
 	/**
-	 * Destroy shared memory segment
+	 * Detach System V shared memory segment
 	 * Params:
 	 *  key_t key
 	 *  bool force - true to destroy even there are other processed uses this segment
-	 * Returns count of left attaches or -1 on error
+	 * Returns 0 if deleted, or count of left attaches, or -1 if not exists
 	 */
 	NAN_METHOD(detach);
 
 	/**
-	 * Destroy shared memory segment
+	 * Detach POSIX shared memory object
 	 * Params:
-	 *  key_t key
-	 *  bool force - true to destroy even there are other processed uses this segment
-	 * Returns count of left attaches or -1 on error
+	 *  String name
+	 *  bool force - true to destroy
+	 * Returns 0 if deleted, 1 if detached, -1 if not exists
 	 */
 	NAN_METHOD(detachPosix);
 
 	/**
-	 * Detach all created and getted shared memory segments
-	 * Returns count of destroyed segments
+	 * Detach all created and getted shared memory segments and objects
+	 * Returns count of destroyed System V segments
 	 */
+	NAN_METHOD(detachAll);
 
 	/**
 	 * Get total size of all *created* shared memory in bytes
 	 */
-	NAN_METHOD(getTotalSize);
+	NAN_METHOD(getTotalAllocatedSize);
 
 	/**
 	 * Get total size of all *used* shared memory in bytes

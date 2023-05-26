@@ -16,8 +16,12 @@ if (cluster.isMaster) {
 	assert(a instanceof Float32Array);
 	assert(a.key == key1);
 	assert(b === null);
+
+	// Detach and destroy
 	let attachesCnt = shm.detach(a.key);
 	assert(attachesCnt === 0);
+	assert(shm.getTotalSize() == 0);
+	assert(shm.getTotalCreatedSize() == 0);
 
 	// Assert that getting shm by unexisting key will fail
 	const c = shm.get(unexistingKey, 'Buffer');
@@ -25,7 +29,10 @@ if (cluster.isMaster) {
 
 	// Test using shm between 2 node processes
 	buf = shm.create(4096); //4KB, SYSV
+	assert(shm.getTotalSize() == 4096);
 	arr = shm.create(10000, 'Float32Array', posixKey); //1M floats, POSIX
+	assert(shm.getTotalSize() == 4096 + 10000*4+8); // extra 8 bytes for size of POSIX buffer (for 64bit system)
+	assert(shm.getTotalCreatedSize() == 4096 + 10000*4+8);
 	assert(arr && typeof arr.key === 'undefined');
 	//bigarr = shm.create(1000*1000*1000*1.5, 'Float32Array'); //6Gb
 	assert.equal(arr.length, 10000);
@@ -35,7 +42,7 @@ if (cluster.isMaster) {
 	//bigarr[bigarr.length-1] = 6.66;
 	console.log('[Master] Typeof buf:', buf.constructor.name,
 			'Typeof arr:', arr.constructor.name);
-	
+
 	const worker = cluster.fork();
 	worker.on('online', function() {
 		this.send({
@@ -64,6 +71,9 @@ if (cluster.isMaster) {
 		if (msg == 'shm') {
 			buf = shm.get(data.bufKey);
 			arr = shm.get(data.arrKey, 'Float32Array');
+			assert(shm.getTotalCreatedSize() == 0);
+			assert(shm.getTotalSize() == 4096 + 40960); // actual size of POSIX object is multiple of PAGE_SIZE = 4096
+
 			//bigarr = shm.get(data.bigarrKey, 'Float32Array');
 			console.log('[Worker] Typeof buf:', buf.constructor.name,
 					'Typeof arr:', arr.constructor.name);
@@ -86,15 +96,16 @@ if (cluster.isMaster) {
 
 function cleanup() {
 	try {
-		if (shm.detach(key1, true) == 0) {
-			console.log(`Destroyed SydtemV memory segment with key ${key1}`);
+		if (shm.destroy(key1)) {
+			console.log(`Destroyed System V shared memory segment with key ${key1}`);
 		}
 	} catch(_e) {}
 	try {
-		if (shm.detach(posixKey, true) == 0) {
-			console.log(`Destroyed POSIX memory object with key ${posixKey}`);
+		if (shm.destroy(posixKey)) {
+			console.log(`Destroyed POSIX shared memory object with name ${posixKey}`);
 		}
 	} catch(_e) {}
+	assert(shm.getTotalSize() == 0);
 };
 
 function groupSuicide() {
@@ -123,5 +134,6 @@ function groupSuicide() {
 3 [Worker] Get buf[0]= 5  arr[0]= null
 4 [Master] Set buf[0]= 6  arr[0]= 0.3125
 shm segments destroyed: 1
+Destroyed POSIX memory object with key /1234567
 
 */

@@ -11,6 +11,9 @@
   "keywords": [
     "ipc",
     "shm",
+    "systemv",
+    "system-v",
+    "POSIX",
     "shared memory",
     "typed array",
     "TypedArray",

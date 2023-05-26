@@ -18,39 +18,27 @@ type ShmMap = {
 
 /**
 * Create shared memory segment/object.
-* Returns null if shm can't be created.
+* Returns null if shm already exists.
 */
 export function create<K extends keyof ShmMap = 'Buffer'>(count: number, typeKey?: K, key?: number | string, perm?: string): ShmMap[K] | null;
 
 /**
-* Create POSIX shared memory object.
-* Returns null if shm can't be created.
-*/
-export function createPosix<K extends keyof ShmMap = 'Buffer'>(name: string, count: number, typeKey?: K, perm?: string): ShmMap[K] | null;
-
-/**
  * Get shared memory segment/object.
- * Returns null if shm can't be opened.
+ * Returns null if shm not exists.
  */
 export function get<K extends keyof ShmMap = 'Buffer'>(key: number | string, typeKey?: K): ShmMap[K] | null;
 
 /**
- * Get POSIX shared memory object.
- * Returns null if shm can't be opened.
- */
-export function getPosix<K extends keyof ShmMap = 'Buffer'>(name: string, typeKey?: K): ShmMap[K] | null;
-
-/**
  * Detach shared memory segment/object.
- * If there are no other attaches for this segment, it will be destroyed.
+ * For System V: If there are no other attaches for this segment, it will be destroyed.
+ * Returns 0 on destroy, 1 on detach, -1 on error
  */
 export function detach(key: number | string, forceDestoy?: boolean): number;
 
 /**
- * Detach POSIX shared memory object.
- * If forceDestoy is true, it will be unlinked.
+ * Destroy shared memory segment/object.
  */
-export function detachPosix(name: string, forceDestoy?: boolean): number;
+export function destroy(key: number | string): boolean;
 
 /**
  * Detach all created and getted shared memory segments/objects.
@@ -59,14 +47,14 @@ export function detachPosix(name: string, forceDestoy?: boolean): number;
 export function detachAll(): number;
 
 /**
- * Get total size of all *created* shared memory in bytes.
+ * Get total size of all *used* shared memory in bytes.
  */
 export function getTotalSize(): number;
 
 /**
- * Get total size of all *used* shared memory in bytes.
+ * Get total size of all *created* shared memory in bytes.
  */
-export function getTotalUsedSize(): number;
+export function getTotalCreatedSize(): number;
 
 /**
  * Max length of shared memory segment (count of elements, not bytes).
