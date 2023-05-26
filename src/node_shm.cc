@@ -173,6 +173,7 @@ namespace node_shm {
 	};
 
 	#define NOT_FOUND_IND ULONG_MAX
+	#define NO_SHMID INT_MIN
 
 	// Array to keep info about created segments, call it "meta array"
 	std::vector<ShmMeta> shmMeta;
@@ -221,7 +222,7 @@ namespace node_shm {
 		const auto found = std::find_if(shmMeta.begin(), shmMeta.end(),
 			[&](const auto& el) {
 				return el.type == search.type 
-					&& (search.id == 0 || el.id == search.id) 
+					&& (search.id == NO_SHMID || el.id == search.id) 
 					&& (search.name.length() == 0 || search.name.compare(el.name) == 0);
 			}
 		);
@@ -262,7 +263,7 @@ namespace node_shm {
 				shmMappedBytes -= meta.memSize;
 			}
 			meta.memAddr = NULL;
-			if (meta.id == 0) {
+			if (meta.id == NO_SHMID) {
 				// meta is obsolete, should be deleted from meta array
 				return 0;
 			}
@@ -530,7 +531,7 @@ namespace node_shm {
 
 		// Write meta
 		ShmMeta meta = {
-			.type=SHM_TYPE_POSIX, .id=0, .memAddr=res, .memSize=realSize, .name=name, .isOwner=isCreate
+			.type=SHM_TYPE_POSIX, .id=NO_SHMID, .memAddr=res, .memSize=realSize, .name=name, .isOwner=isCreate
 		};
 		size_t metaInd = findShmSegmentInfo(meta);
 		if (metaInd == NOT_FOUND_IND) {
@@ -602,7 +603,7 @@ namespace node_shm {
 		bool forceDestroy = Nan::To<bool>(info[1]).FromJust();
 
 		ShmMeta meta = {
-			.type=SHM_TYPE_POSIX, .id=0, .memAddr=NULL, .memSize=0, .name=name
+			.type=SHM_TYPE_POSIX, .id=NO_SHMID, .memAddr=NULL, .memSize=0, .name=name
 		};
 		size_t foundInd = findShmSegmentInfo(meta);
 		if (foundInd != NOT_FOUND_IND) {
