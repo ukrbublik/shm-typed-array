@@ -1,0 +1,18 @@
+{
+    "files.associations": {
+        "__bit_reference": "cpp",
+        "unordered_map": "cpp",
+        "string": "cpp",
+        "vector": "cpp"
+    },
+    "terminal.integrated.defaultProfile.linux": "bash",
+    "terminal.integrated.profiles.osx": {
+        "zsh": {
+            "path": "zsh",
+            "args": [
+                "-i"
+            ]
+        }
+    },
+    "terminal.integrated.defaultProfile.osx": "zsh",
+}

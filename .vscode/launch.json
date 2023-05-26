@@ -1,0 +1,21 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug",
+            //"preLaunchTask": "npm: build:debug",
+            "program": "/Users/denys.oblohin/.nvm/versions/node/v14.20.1/bin/node",
+            "args": [
+                "${workspaceFolder}/test/example.js"
+            ],
+            "env": {
+                "DEBUG_SHM": "1"
+            }
+        }
+    ]
+}

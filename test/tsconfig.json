@@ -2,6 +2,10 @@
   "compilerOptions": {
     "types": ["node"],
     "strict": true,
-    "baseUrl": ".."
-  }
+    "baseUrl": "..",
+    "skipLibCheck": true
+  },
+  "exclude": [
+    "node_modules"
+  ]
 }

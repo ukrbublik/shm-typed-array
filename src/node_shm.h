@@ -7,6 +7,15 @@
 #include <sys/ipc.h>
 #include <sys/types.h>
 #include <sys/shm.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+#include <algorithm>
+#include <array>
+#include <vector>
+#include <string>
 
 using namespace node;
 using namespace v8;
@@ -43,7 +52,7 @@ enum ShmBufferType {
 	SHMBT_FLOAT64
 };
 
-inline int getSize1ForShmBufferType(ShmBufferType type) {
+inline int getSizeForShmBufferType(ShmBufferType type) {
 	size_t size1 = 0;
 	switch(type) {
 		case SHMBT_BUFFER:
@@ -78,11 +87,11 @@ namespace Buffer {
 		char* data, 
 		size_t length
 	#if NODE_MODULE_VERSION > IOJS_2_0_MODULE_VERSION
-	    , node::Buffer::FreeCallback callback
+		, node::Buffer::FreeCallback callback
 	#else
-	    , node::smalloc::FreeCallback callback
+		, node::smalloc::FreeCallback callback
 	#endif
-	    , void *hint
+		, void *hint
 		, ShmBufferType type = SHMBT_FLOAT64
 	);
 
@@ -93,14 +102,14 @@ namespace Buffer {
 namespace Nan {
 
 	inline MaybeLocal<Object> NewTypedBuffer(
-	      char *data
-	    , size_t length
+		char *data
+		, size_t length
 #if NODE_MODULE_VERSION > IOJS_2_0_MODULE_VERSION
-	    , node::Buffer::FreeCallback callback
+		, node::Buffer::FreeCallback callback
 #else
-	    , node::smalloc::FreeCallback callback
+		, node::smalloc::FreeCallback callback
 #endif
-	    , void *hint
+		, void *hint
 		, ShmBufferType type = SHMBT_FLOAT64
 	);
 
@@ -111,7 +120,7 @@ namespace node {
 namespace node_shm {
 
 	/**
-	 * Create or get shared memory
+	 * Create or get System V shared memory segment
 	 * Params:
 	 *  key_t key
 	 *  size_t count - count of elements, not bytes
@@ -119,36 +128,64 @@ namespace node_shm {
 	 *  int at_shmflg - flags for shmat()
 	 *  enum ShmBufferType type
 	 * Returns buffer or typed array, depends on input param type
+	 * If not exists/alreeady exists, returns null
 	 */
 	NAN_METHOD(get);
 
 	/**
-	 * Destroy shared memory segment
+	 * Create or get POSIX shared memory object
+	 * Params:
+	 *  String name
+	 *  size_t count - count of elements, not bytes
+	 *  int oflag - flag for shm_open()
+	 *  mode_t mode - mode for shm_open()
+	 *  int mmap_flags - flags for mmap()
+	 *  enum ShmBufferType type
+	 * Returns buffer or typed array, depends on input param type
+	 * If not exists/alreeady exists, returns null
+	 */
+	NAN_METHOD(getPosix);
+
+	/**
+	 * Detach System V shared memory segment
 	 * Params:
 	 *  key_t key
 	 *  bool force - true to destroy even there are other processed uses this segment
-	 * Returns count of left attaches or -1 on error
+	 * Returns 0 if deleted, or count of left attaches, or -1 if not exists
 	 */
 	NAN_METHOD(detach);
 
 	/**
-	 * Detach all created and getted shared memory segments
-	 * Returns count of destroyed segments
+	 * Detach POSIX shared memory object
+	 * Params:
+	 *  String name
+	 *  bool force - true to destroy
+	 * Returns 0 if deleted, 1 if detached, -1 if not exists
+	 */
+	NAN_METHOD(detachPosix);
+
+	/**
+	 * Detach all created and getted shared memory segments and objects
+	 * Returns count of destroyed System V segments
 	 */
 	NAN_METHOD(detachAll);
 
 	/**
-	 * Get total size of all shared segments in bytes
+	 * Get total size of all *created* shared memory in bytes
 	 */
-	NAN_METHOD(getTotalSize);
+	NAN_METHOD(getTotalAllocatedSize);
+
+	/**
+	 * Get total size of all *used* shared memory in bytes
+	 */
+	NAN_METHOD(getTotalUsedSize);
 
 	/**
 	 * Constants to be exported:
-	 * IPC_PRIVATE
-	 * IPC_CREAT
-	 * IPC_EXCL
+	 * IPC_PRIVATE, IPC_CREAT, IPC_EXCL
 	 * SHM_RDONLY
 	 * NODE_BUFFER_MAX_LENGTH (count of elements, not bytes)
+	 * O_CREAT, O_RDWR, O_RDONLY, O_EXCL, O_TRUNC
 	 * enum ShmBufferType: 
 	 *  SHMBT_BUFFER, SHMBT_INT8, SHMBT_UINT8, SHMBT_UINT8CLAMPED, 
 	 *  SHMBT_INT16, SHMBT_UINT16, SHMBT_INT32, SHMBT_UINT32, 

@@ -4,8 +4,7 @@ node_js:
   - 14
   - 17
 install:
-  - npm install
-  - npm test
+  - npm install --force
 addons:
   apt:
     sources:

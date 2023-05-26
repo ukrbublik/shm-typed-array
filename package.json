@@ -1,6 +1,6 @@
 {
   "name": "shm-typed-array",
-  "version": "0.0.16",
+  "version": "0.1.0",
   "description": "IPC shared memory for NodeJs. Use as Buffer or TypedArray.",
   "main": "index.js",
   "types": "index.d.ts",
@@ -11,6 +11,9 @@
   "keywords": [
     "ipc",
     "shm",
+    "systemv",
+    "system-v",
+    "POSIX",
     "shared memory",
     "typed array",
     "TypedArray",
@@ -46,13 +49,15 @@
   },
   "homepage": "https://github.com/ukrbublik/shm-typed-array",
   "scripts": {
-    "install": "node-gyp configure && node-gyp rebuild",
+    "build": "node-gyp configure && node-gyp rebuild",
+    "build:debug": "node-gyp configure --debug && node-gyp rebuild --debug",
+    "install": "npm run build",
     "test": "node test/example.js",
-    "test-types": "typings-tester --config test/tsconfig.json test/typings.ts"
+    "test:types": "typings-tester --config test/tsconfig.json test/typings.ts"
   },
   "devDependencies": {
-    "@types/node": "^10.9.4",
-    "typescript": "^2.9.2",
-    "typings-tester": "^0.3.1"
+    "@types/node": "^20.2.3",
+    "typescript": "^4.8.4",
+    "typings-tester": "^0.3.2"
   }
 }

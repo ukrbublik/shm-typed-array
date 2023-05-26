@@ -8,6 +8,13 @@
 		"sources": [
 			"src/node_shm.h",
 			"src/node_shm.cc"
-		]
+		],
+		"conditions": [
+			["OS!='mac'", {
+				"libraries": [
+					"-lrt"
+				]
+			}]
+		],
 	}]
 }
