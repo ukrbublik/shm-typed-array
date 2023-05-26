@@ -13,6 +13,8 @@ if (cluster.isMaster) {
 	// Assert that creating shm with same key twice will fail
 	const a = shm.create(10, 'Float32Array', key1); //SYSV
 	const b = shm.create(10, 'Float32Array', key1); //SYSV
+	assert.equal(shm.getTotalCreatedSize(), 10*4);
+	assert.equal(shm.getTotalSize(), 10*4);
 	assert(a instanceof Float32Array);
 	assert.equal(a.key, key1);
 	assert.equal(b, null);
