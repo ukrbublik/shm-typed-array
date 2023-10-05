@@ -36,7 +36,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "nan": "^2.13.2"
+    "nan": "^2.18.0"
   },
   "os": [
     "!win32"
